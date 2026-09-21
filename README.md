@@ -4,28 +4,43 @@ Projeto acadêmico do curso de Ciência de Dados da UNIVESP voltado à análise 
 
 ## Objetivo
 
-Organizar, tratar e apresentar informações sobre infraestrutura escolar de forma simples, comparável e acessível, permitindo consultas por escola e análises agregadas por recortes relevantes.
+Transformar dados públicos de infraestrutura escolar em informações simples de consultar e comparar, com foco em Guaratinguetá e em recortes que façam sentido após a análise exploratória.
 
-## Arquitetura prevista
+## Abordagem prevista
 
-1. Dados públicos do INEP/Censo Escolar.
-2. Extração, tratamento e análise em Python, preferencialmente via Google Colab.
-3. Produção de uma base analítica curada para consumo.
-4. Disponibilização da camada de consumo em Google Sheets.
-5. Web App desenvolvido com Google Apps Script, HTML, CSS e JavaScript.
-6. Versionamento do código, notebooks e documentação neste repositório.
+1. Identificar os arquivos e a documentação oficial do Censo Escolar/INEP.
+2. Tratar e analisar os dados em Python, preferencialmente via Google Colab.
+3. Criar apenas as etapas intermediárias de dados que forem tecnicamente necessárias.
+4. Produzir uma base final confiável para consumo.
+5. Disponibilizar essa base em Google Sheets.
+6. Construir um Web App com Google Apps Script, HTML, CSS e JavaScript.
+7. Publicar aqui checkpoints técnicos consistentes do projeto.
 
-## Estrutura do repositório
+## Papel deste repositório
 
-- `docs/`: arquitetura, metodologia e modo de trabalho.
-- `notebooks/`: notebooks de extração, tratamento e análise.
-- `src/`: scripts Python reutilizáveis, quando necessário.
-- `app/`: código do Google Apps Script e frontend do Web App.
-- `data/`: documentação das fontes e da estrutura dos dados. Microdados brutos de grande porte não serão versionados aqui.
+Este repositório é a vitrine técnica pública do projeto e o histórico de entregas reproduzíveis.
+
+Entram aqui, conforme forem consolidados:
+
+- notebooks e scripts;
+- artefatos de dados leves que façam sentido publicar;
+- informações necessárias para compreender ou reproduzir os resultados;
+- código do Web App;
+- links e resultados finais do projeto.
+
+A organização operacional do grupo, o Kanban e os arquivos vivos de trabalho permanecem no Google Drive compartilhado e não precisam ser espelhados aqui.
+
+## Dados
+
+Os arquivos oficiais de origem e outros dados de trabalho ficam no Google Drive do projeto.
+
+Não adotamos previamente uma arquitetura obrigatória de camadas como bronze/silver/gold. Entre a fonte original e a base final de consumo, novas etapas só serão criadas se houver uma necessidade técnica clara, com nomes que indiquem sua função.
+
+A base final usada pelo Web App será disponibilizada em Google Sheets. Exports leves, como CSVs de tabelas tratadas ou finais, poderão ser publicados aqui quando forem úteis para transparência e reprodutibilidade.
 
 ## Status
 
-Projeto em fase inicial de estruturação e preparação da base de dados.
+Infraestrutura inicial do projeto concluída. Próxima etapa: definição e obtenção dos dados oficiais do Censo Escolar que serão utilizados.
 
 ## Equipe
 
