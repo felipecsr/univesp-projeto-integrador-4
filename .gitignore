@@ -1,5 +1,4 @@
-# Dados locais e exportações
-*.csv
+# Planilhas e arquivos binários locais
 *.xlsx
 *.xls
 *.zip
