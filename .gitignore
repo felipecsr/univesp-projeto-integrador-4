@@ -1,0 +1,22 @@
+# Dados locais e exportações
+*.csv
+*.xlsx
+*.xls
+*.zip
+*.parquet
+*.feather
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Ambiente
+.env
+.env.*
+
+# Sistema
+.DS_Store
+Thumbs.db
