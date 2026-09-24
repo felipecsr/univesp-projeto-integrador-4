@@ -26,15 +26,14 @@ Responder rapidamente: como está a infraestrutura escolar do município e como 
 
 ### Controles
 - Ano: 2023, 2024, 2025; padrão = 2025.
-- Rede administrativa: Estadual, Municipal, Privada e Federal quando aplicável.
-- Zona: Urbana / Rural.
-- Leitura padrão: percentual de escolas.
-- Ponderação por matrículas fica em **Opções de leitura**, como visão complementar, para não poluir a interface principal.
+- Não há filtro de rede ou zona no topo da Visão Geral.
+- A leitura principal nessa tela é percentual de escolas.
 
 ### Regra importante
-- Rede e zona são filtros da fotografia de **2025**.
-- A série 2023–2025 é apresentada no agregado municipal para evitar misturar recortes que ainda não fazem parte da base final histórica por rede/zona.
-- Ponderação por matrículas é secundária; a leitura padrão é percentual de escolas.
+- A Visão Geral é sempre municipal e mostra somente Guaratinguetá.
+- O ano selecionado altera KPIs e o perfil horizontal dos 11 indicadores.
+- A série 2023–2025 permanece municipal.
+- Rede e zona aparecem como **gráficos de detalhamento de 2025**, não como filtros da visão principal.
 - Bases com menos de 5 escolas devem ser sinalizadas.
 
 ### KPIs
@@ -44,14 +43,13 @@ Responder rapidamente: como está a infraestrutura escolar do município e como 
 
 ### Conteúdo principal
 - KPIs de escolas, matrículas e salas.
-- Cards dos 11 indicadores de infraestrutura, ordenados do maior para o menor resultado no recorte atual e com escala visual de cobertura.
-- Gráfico horizontal com o perfil completo dos 11 indicadores no recorte atual.
+- Gráfico horizontal com os 11 indicadores do ano selecionado, ordenados do maior para o menor percentual.
 - Gráfico de tendência 2023–2025 para o indicador selecionado.
-- Gráficos do indicador selecionado por rede administrativa e por zona em 2025.
+- Gráficos de detalhamento por rede administrativa e por zona em 2025 para o mesmo indicador.
 - Informação de denominador válido quando houver nulos.
 
 ### Interação
-Selecionar um indicador nos cards atualiza o gráfico temporal e os detalhes daquele indicador.
+Clicar em qualquer barra do gráfico horizontal seleciona o indicador. A seleção destaca a barra, atualiza imediatamente a evolução 2023–2025 e atualiza os dois gráficos inferiores de rede e zona. Os cards individuais de indicadores foram removidos por redundância.
 
 ---
 
