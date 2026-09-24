@@ -65,7 +65,7 @@ A estrutura atual distingue:
 - tratamentos e base analítica para EDA;
 - base final de consumo do Web App.
 
-A base final usada pelo Web App será disponibilizada em Google Sheets. Exports leves em CSV poderão ser publicados aqui quando forem úteis para transparência e reprodutibilidade.
+A base final de consumo do Web App já foi materializada em Google Sheets no Drive do projeto. Sua construção é reproduzível por `src/build_consumption.py`; a estrutura está documentada em [`docs/BASE_CONSUMO.md`](docs/BASE_CONSUMO.md).
 
 ## Papel deste repositório
 
@@ -81,9 +81,9 @@ Entram aqui, quando consolidados:
 
 A organização operacional do grupo, o Kanban e os arquivos vivos de trabalho permanecem no Google Drive compartilhado.
 
-## EDA preparada
+## EDA e base de consumo
 
-A próxima camada técnica já está preparada no repositório:
+A camada analítica e a preparação da base de consumo estão consolidadas no repositório:
 
 - `notebooks/02_eda_guaratingueta.ipynb`: perfil descritivo de Guaratinguetá, infraestrutura, rede, zona e permanência das escolas;
 - `notebooks/03_comparaveis_sp.ipynb`: perfil dos 645 municípios paulistas e construção de um pool exploratório de comparáveis;
@@ -93,11 +93,15 @@ A próxima camada técnica já está preparada no repositório:
 - [`docs/METODO_COMPARAVEIS.md`](docs/METODO_COMPARAVEIS.md): critérios e limites do método de comparabilidade;
 - [`docs/PONDERACAO_MATRICULAS.md`](docs/PONDERACAO_MATRICULAS.md): regra e interpretação do teste de ponderação.
 
-Esses notebooks só consolidam resultados oficiais depois que existir uma execução humana de P03 no Colab e o gate de P04 passar.
+A validação técnica de P04 e a EDA foram executadas sobre os arquivos oficiais. As execuções manuais no Colab permanecem como trilha adicional de reprodução e evidência do grupo.
+
+## Base de consumo
+
+`src/build_consumption.py` produz as tabelas finais por escola e agregadas usadas pelo Web App. O escopo inclui 2025 como fotografia principal, tendências 2023–2025, comparações por rede/zona, consulta por escola e grupo padrão de 10 municípios comparáveis.
 
 ## Próxima etapa
 
-Executar a base analítica no Colab, reconciliá-la pelo gate P04 e então materializar as EDA de Guaratinguetá e dos municípios comparáveis.
+Definir o wireframe do MVP e conectar o Web App à base final de consumo.
 
 ## Equipe
 
