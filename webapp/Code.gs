@@ -23,11 +23,25 @@ function getBootstrapData() {
   const comparables = getObjects_(TAB.COMPARAVEIS);
   const municipalityCode = String(config.MUNICIPIO_FOCO || '3518404');
   const schools = getRowsByValue_(TAB.ESCOLAS, 'CO_MUNICIPIO', municipalityCode);
+  const municipalityRows = getRowsByValue_(TAB.MUNICIPIO_ANO, 'CO_MUNICIPIO', municipalityCode);
+  const defaultYear = String(config.ANO_PADRAO || '2025');
+  const defaultRow = municipalityRows.find(function (row) { return String(row.NU_ANO_CENSO) === defaultYear; });
+  const initialOverview = defaultRow ? {
+    municipalityCode: municipalityCode,
+    year: defaultYear,
+    mode: 'schools',
+    rede: '',
+    zona: '',
+    snapshot: rowToSnapshot_(defaultRow, catalog, config),
+    history: municipalityRows.sort(function (a, b) { return Number(a.NU_ANO_CENSO) - Number(b.NU_ANO_CENSO); })
+      .map(function (row) { return rowToSnapshot_(row, catalog, config); }),
+  } : null;
 
   return {
     config: config,
     catalog: catalog,
     comparables: comparables,
+    initialOverview: initialOverview,
     filters: {
       years: ['2023', '2024', '2025'],
       redes: unique_(schools.map(function (row) { return row.REDE; }).filter(Boolean)),
@@ -96,7 +110,7 @@ function getBreakdownData(params) {
         value: numericOrNull_(row[valueKey]),
         valid: numericOrNull_(row[validKey]),
         schools: numericOrNull_(row.N_ESCOLAS),
-        baseSmall: Boolean(row.BASE_PEQUENA),
+        baseSmall: numericOrNull_(row.N_ESCOLAS) !== null && numericOrNull_(row.N_ESCOLAS) < Number(config.BASE_PEQUENA_LIMITE || 5),
       };
     }),
     zones: zoneRows.map(function (row) {
@@ -179,6 +193,53 @@ function getComparableProfileData(params) {
   };
 }
 
+function getComparisonBundle(params) {
+  params = params || {};
+  const config = config_();
+  const year = String(params.year || config.ANO_PADRAO || '2025');
+  const mode = String(params.mode || 'schools');
+  const indicatorId = String(params.indicatorId || 'internet');
+  const focusCode = String(config.MUNICIPIO_FOCO || '3518404');
+  const codes = getObjects_(TAB.COMPARAVEIS).map(function (row) { return String(row.CO_MUNICIPIO); });
+  const rows = getObjects_(TAB.MUNICIPIO_ANO).filter(function (row) {
+    return String(row.NU_ANO_CENSO) === year && codes.indexOf(String(row.CO_MUNICIPIO)) >= 0;
+  });
+  const valueKey = (mode === 'enrollments' ? 'PCTPOND_' : 'PCT_') + indicatorId;
+  const validKey = (mode === 'enrollments' ? 'N_VALIDOS_POND_' : 'N_VALIDOS_') + indicatorId;
+  const comparisonRows = rows.map(function (row) {
+    return {
+      municipalityCode: String(row.CO_MUNICIPIO),
+      municipality: row.NO_MUNICIPIO,
+      value: numericOrNull_(row[valueKey]),
+      valid: numericOrNull_(row[validKey]),
+      schools: numericOrNull_(row.N_ESCOLAS),
+      enrollments: numericOrNull_(row.QT_MAT_BAS),
+      focus: String(row.CO_MUNICIPIO) === focusCode,
+    };
+  }).sort(function (a, b) {
+    if (a.value === null && b.value === null) return 0;
+    if (a.value === null) return 1;
+    if (b.value === null) return -1;
+    return b.value - a.value;
+  });
+
+  const focus = rows.find(function (row) { return String(row.CO_MUNICIPIO) === focusCode; });
+  const others = rows.filter(function (row) { return String(row.CO_MUNICIPIO) !== focusCode; });
+  const profileRows = catalog_().filter(function (row) { return String(row.TIPO) === 'Percentual'; }).map(function (item) {
+    const id = String(item.ID);
+    const key = (mode === 'enrollments' ? 'PCTPOND_' : 'PCT_') + id;
+    const vals = others.map(function (row) { return numericOrNull_(row[key]); }).filter(function (v) { return v !== null; });
+    return {
+      id: id, label: item.INDICADOR, focus: focus ? numericOrNull_(focus[key]) : null,
+      comparableMean: vals.length ? vals.reduce(function (a, v) { return a + v; }, 0) / vals.length : null,
+    };
+  });
+
+  return {
+    comparison: { indicatorId: indicatorId, year: year, mode: mode, rows: comparisonRows },
+    profile: { year: year, mode: mode, rows: profileRows },
+  };
+}
 function searchSchools(params) {
   params = params || {};
   const config = config_();
