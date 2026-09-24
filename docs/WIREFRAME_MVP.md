@@ -28,7 +28,8 @@ Responder rapidamente: como está a infraestrutura escolar do município e como 
 - Ano: 2023, 2024, 2025; padrão = 2025.
 - Rede administrativa: Estadual, Municipal, Privada e Federal quando aplicável.
 - Zona: Urbana / Rural.
-- Alternância de leitura: percentual de escolas / percentual ponderado por matrículas.
+- Leitura padrão: percentual de escolas.
+- Ponderação por matrículas fica em **Opções de leitura**, como visão complementar, para não poluir a interface principal.
 
 ### Regra importante
 - Rede e zona são filtros da fotografia de **2025**.
@@ -43,7 +44,7 @@ Responder rapidamente: como está a infraestrutura escolar do município e como 
 
 ### Conteúdo principal
 - KPIs de escolas, matrículas e salas.
-- Cards dos 11 indicadores de infraestrutura.
+- Cards dos 11 indicadores de infraestrutura, ordenados do maior para o menor resultado no recorte atual e com escala visual de cobertura.
 - Gráfico horizontal com o perfil completo dos 11 indicadores no recorte atual.
 - Gráfico de tendência 2023–2025 para o indicador selecionado.
 - Gráficos do indicador selecionado por rede administrativa e por zona em 2025.
@@ -64,14 +65,15 @@ Guaratinguetá + 10 municípios comparáveis definidos pela análise estrutural 
 
 ### Controles
 - Indicador.
-- Ano.
+- Anos exibidos: 2023, 2024 e 2025 selecionados independentemente; padrão = os três juntos.
 - Município comparável individual ou grupo completo.
-- Alternância percentual de escolas / percentual ponderado por matrículas, quando aplicável.
+- Ponderação por matrículas disponível apenas em **Opções de leitura**.
 
 ### Conteúdo principal
-- Gráfico comparativo do indicador selecionado.
+- Gráfico comparativo do indicador selecionado com os anos escolhidos lado a lado e valores visíveis nas barras.
 - Destaque visual para Guaratinguetá.
 - Gráfico de perfil geral: Guaratinguetá versus média simples dos 10 comparáveis nos 11 indicadores.
+- Gráfico de dispersão/bolhas: indicador no eixo X, matrículas no eixo Y e número de escolas no tamanho da bolha; Guaratinguetá destacada.
 - Tabela curta com município, valor e denominador.
 - Contexto estrutural dos comparáveis: escolas e matrículas.
 
@@ -99,7 +101,7 @@ Permitir consulta direta de uma escola de Guaratinguetá.
 - Situação de cada um dos 11 indicadores de infraestrutura.
 
 ### Comparação contextual
-Para cada indicador binário, mostrar o percentual correspondente do município em 2025 como referência, sem transformar a escola em ranking. A ficha inclui um gráfico horizontal escola × Guaratinguetá para facilitar a leitura dos 11 itens.
+Para cada indicador binário, mostrar o percentual correspondente do município em 2025 como referência, sem transformar a escola em ranking. A ficha inclui um gráfico horizontal escola × Guaratinguetá e uma opção para acrescentar a média dos 10 municípios comparáveis.
 
 ### Regra
 A consulta por escola usa a fotografia de 2025, que é a base final por escola do MVP.
@@ -152,3 +154,11 @@ A01 está concluída quando estas quatro telas, seus controles e suas regras de 
 - A lista de escolas de Guaratinguetá é carregada uma única vez e filtrada no navegador.
 - O backend evita ler repetidamente a tabela completa de escolas de SP: localiza e lê somente o bloco do município-foco, com cache temporário.
 - A configuração inicial pode ser reaproveitada no navegador por curto período para reduzir roundtrips sem alterar a fonte oficial.
+
+## Convenções visuais da versão atual
+
+- Valores percentuais aparecem diretamente nas barras e nos pontos da série temporal; tooltip permanece como detalhe adicional.
+- Guaratinguetá usa destaque amarelo nas comparações.
+- A barra de filtros muda discretamente de tonalidade quando fica presa ao topo durante a rolagem.
+- A interface mostra estado de **Atualizando dados…** e **Dados carregados** durante chamadas ao backend.
+- Com apenas três anos e necessidade de combinações não contíguas (por exemplo, 2023 + 2025), seletores independentes de ano são mais adequados do que um slider contínuo.
