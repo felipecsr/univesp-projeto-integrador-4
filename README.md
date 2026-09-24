@@ -87,8 +87,11 @@ A próxima camada técnica já está preparada no repositório:
 
 - `notebooks/02_eda_guaratingueta.ipynb`: perfil descritivo de Guaratinguetá, infraestrutura, rede, zona e permanência das escolas;
 - `notebooks/03_comparaveis_sp.ipynb`: perfil dos 645 municípios paulistas e construção de um pool exploratório de comparáveis;
+- `notebooks/04_rede_zona.ipynb`: diferenças de infraestrutura por rede administrativa e localização urbana/rural;
+- `notebooks/05_ponderacao_matriculas.ipynb`: teste de percentual simples de escolas versus ponderação por matrículas;
 - `src/eda.py`: funções reutilizáveis dessas análises;
-- [`docs/METODO_COMPARAVEIS.md`](docs/METODO_COMPARAVEIS.md): critérios e limites do método de comparabilidade.
+- [`docs/METODO_COMPARAVEIS.md`](docs/METODO_COMPARAVEIS.md): critérios e limites do método de comparabilidade;
+- [`docs/PONDERACAO_MATRICULAS.md`](docs/PONDERACAO_MATRICULAS.md): regra e interpretação do teste de ponderação.
 
 Esses notebooks só consolidam resultados oficiais depois que existir uma execução humana de P03 no Colab e o gate de P04 passar.
 
