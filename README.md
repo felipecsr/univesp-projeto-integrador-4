@@ -101,13 +101,17 @@ A validação técnica de P04 e a EDA foram executadas sobre os arquivos oficiai
 
 ## Web App — MVP
 
-A arquitetura funcional do MVP está documentada em [`docs/WIREFRAME_MVP.md`](docs/WIREFRAME_MVP.md). O código inicial do Web App está em `webapp/`, com backend em Apps Script e frontend HTML/CSS/JavaScript apontando para a base final de consumo.
+A arquitetura funcional do MVP está documentada em [`docs/WIREFRAME_MVP.md`](docs/WIREFRAME_MVP.md). O código final do Web App está em `webapp/`, com backend em Apps Script e frontend HTML/CSS/JavaScript apontando para a base final de consumo.
 
 O MVP foi organizado em quatro telas: Visão Geral, Comparações, Escolas e Sobre os dados.
 
-## Próxima etapa
+**Aplicação publicada:** https://script.google.com/macros/s/AKfycbwN7KphXDuU-Yhjjv_C9GdCNlhHKb1IeP50xz_Thw_Q6HAXT4woKL-AKjYW26Tm-cvhOQ/exec
 
-Validar a execução do Web App no Apps Script e completar os testes das consultas e visualizações.
+A versão publicada corresponde ao fechamento técnico do MVP em 24/09/2026, após as rodadas de ajuste de navegação, visualizações, comparação temporal, consulta por escola e desempenho de carregamento.
+
+## Situação atual
+
+O desenvolvimento técnico principal está concluído. Permanecem como etapas acadêmicas e de apresentação a preparação da demonstração/vídeo e as execuções manuais de notebooks mantidas como trilha adicional de reprodução e evidência.
 
 ## Equipe
 
