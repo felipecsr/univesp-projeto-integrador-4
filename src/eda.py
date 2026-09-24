@@ -432,3 +432,118 @@ def comparable_pool(
         )
         .reset_index(drop=True)
     )
+
+
+def infrastructure_by_cut(
+    panel: pd.DataFrame,
+    cut_column: str,
+    municipality_code: str = GUARATINGUETA,
+) -> pd.DataFrame:
+    """
+    Compara indicadores de infraestrutura por rede ou zona dentro do município.
+
+    Bases com menos de 5 escolas válidas são marcadas como `base_pequena`
+    para evitar leitura excessiva de percentuais instáveis.
+    """
+    if cut_column not in {"TP_DEPENDENCIA", "TP_LOCALIZACAO"}:
+        raise ValueError(
+            "cut_column deve ser TP_DEPENDENCIA ou TP_LOCALIZACAO."
+        )
+
+    df = _municipality(panel, municipality_code)
+    labels = (
+        DEPENDENCY_LABELS
+        if cut_column == "TP_DEPENDENCIA"
+        else LOCALIZATION_LABELS
+    )
+    rows: list[dict[str, object]] = []
+
+    for (year, cut), group in df.groupby(
+        ["NU_ANO_CENSO", cut_column],
+        dropna=False,
+        sort=True,
+    ):
+        for indicator in BINARY_COLUMNS:
+            values = pd.to_numeric(group[indicator], errors="coerce")
+            valid = values.dropna()
+            rows.append(
+                {
+                    "ano": str(year),
+                    "corte": cut_column,
+                    "codigo_corte": str(cut),
+                    "grupo": labels.get(str(cut), f"Código {cut}"),
+                    "indicador": indicator,
+                    "escolas_validas": int(valid.shape[0]),
+                    "escolas_com_item": int((valid == 1).sum()),
+                    "pct_escolas_com_item": (
+                        float(valid.mean()) if len(valid) else np.nan
+                    ),
+                    "pct_nulo": float(values.isna().mean()),
+                    "base_pequena": bool(len(valid) < 5),
+                }
+            )
+
+    return pd.DataFrame(rows)
+
+
+def enrollment_weighted_infrastructure(
+    panel: pd.DataFrame,
+    municipality_code: str = GUARATINGUETA,
+) -> pd.DataFrame:
+    """
+    Compara percentual simples de escolas com o item e percentual ponderado
+    pelas matrículas da escola.
+
+    O ponderado aproxima a parcela de estudantes matriculados em escolas que
+    possuem cada item de infraestrutura. Escolas sem matrícula informada não
+    entram no denominador ponderado e são contabilizadas separadamente.
+    """
+    df = _municipality(panel, municipality_code)
+    rows: list[dict[str, object]] = []
+
+    for year, group in df.groupby("NU_ANO_CENSO", sort=True):
+        weights = pd.to_numeric(group["QT_MAT_BAS"], errors="coerce")
+
+        for indicator in BINARY_COLUMNS:
+            values = pd.to_numeric(group[indicator], errors="coerce")
+            unweighted_valid = values.dropna()
+            mask = values.notna() & weights.notna() & (weights >= 0)
+
+            pct_schools = (
+                float(unweighted_valid.mean())
+                if len(unweighted_valid)
+                else np.nan
+            )
+
+            if mask.any() and float(weights[mask].sum()) > 0:
+                pct_enrollments = float(
+                    (values[mask] * weights[mask]).sum()
+                    / weights[mask].sum()
+                )
+                covered_enrollment = int(weights[mask].sum())
+            else:
+                pct_enrollments = np.nan
+                covered_enrollment = 0
+
+            rows.append(
+                {
+                    "ano": str(year),
+                    "indicador": indicator,
+                    "pct_escolas_com_item": pct_schools,
+                    "pct_matriculas_em_escolas_com_item": pct_enrollments,
+                    "dif_ponderado_vs_escolas_pp": (
+                        (pct_enrollments - pct_schools) * 100
+                        if pd.notna(pct_enrollments)
+                        and pd.notna(pct_schools)
+                        else np.nan
+                    ),
+                    "escolas_validas_simples": int(
+                        unweighted_valid.shape[0]
+                    ),
+                    "escolas_validas_ponderacao": int(mask.sum()),
+                    "matriculas_cobertas_ponderacao": covered_enrollment,
+                    "escolas_sem_matricula": int(weights.isna().sum()),
+                }
+            )
+
+    return pd.DataFrame(rows)
