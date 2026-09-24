@@ -196,50 +196,110 @@ function getComparableProfileData(params) {
 function getComparisonBundle(params) {
   params = params || {};
   const config = config_();
-  const year = String(params.year || config.ANO_PADRAO || '2025');
   const mode = String(params.mode || 'schools');
   const indicatorId = String(params.indicatorId || 'internet');
   const focusCode = String(config.MUNICIPIO_FOCO || '3518404');
-  const codes = getObjects_(TAB.COMPARAVEIS).map(function (row) { return String(row.CO_MUNICIPIO); });
-  const rows = getObjects_(TAB.MUNICIPIO_ANO).filter(function (row) {
-    return String(row.NU_ANO_CENSO) === year && codes.indexOf(String(row.CO_MUNICIPIO)) >= 0;
+  const requestedYears = Array.isArray(params.years) && params.years.length
+    ? params.years.map(String)
+    : ['2023', '2024', '2025'];
+  const years = ['2023', '2024', '2025'].filter(function (year) {
+    return requestedYears.indexOf(year) >= 0;
   });
-  const valueKey = (mode === 'enrollments' ? 'PCTPOND_' : 'PCT_') + indicatorId;
-  const validKey = (mode === 'enrollments' ? 'N_VALIDOS_POND_' : 'N_VALIDOS_') + indicatorId;
-  const comparisonRows = rows.map(function (row) {
-    return {
-      municipalityCode: String(row.CO_MUNICIPIO),
-      municipality: row.NO_MUNICIPIO,
+  const codes = getObjects_(TAB.COMPARAVEIS).map(function (row) { return String(row.CO_MUNICIPIO); });
+  const allRows = getObjects_(TAB.MUNICIPIO_ANO).filter(function (row) {
+    return years.indexOf(String(row.NU_ANO_CENSO)) >= 0 &&
+      codes.indexOf(String(row.CO_MUNICIPIO)) >= 0;
+  });
+  const pctPrefix = mode === 'enrollments' ? 'PCTPOND_' : 'PCT_';
+  const validPrefix = mode === 'enrollments' ? 'N_VALIDOS_POND_' : 'N_VALIDOS_';
+  const valueKey = pctPrefix + indicatorId;
+  const validKey = validPrefix + indicatorId;
+
+  const municipalityMap = {};
+  allRows.forEach(function (row) {
+    const code = String(row.CO_MUNICIPIO);
+    if (!municipalityMap[code]) {
+      municipalityMap[code] = {
+        municipalityCode: code,
+        municipality: row.NO_MUNICIPIO,
+        focus: code === focusCode,
+        byYear: {},
+      };
+    }
+    municipalityMap[code].byYear[String(row.NU_ANO_CENSO)] = {
       value: numericOrNull_(row[valueKey]),
       valid: numericOrNull_(row[validKey]),
       schools: numericOrNull_(row.N_ESCOLAS),
       enrollments: numericOrNull_(row.QT_MAT_BAS),
-      focus: String(row.CO_MUNICIPIO) === focusCode,
     };
-  }).sort(function (a, b) {
-    if (a.value === null && b.value === null) return 0;
-    if (a.value === null) return 1;
-    if (b.value === null) return -1;
-    return b.value - a.value;
   });
 
-  const focus = rows.find(function (row) { return String(row.CO_MUNICIPIO) === focusCode; });
-  const others = rows.filter(function (row) { return String(row.CO_MUNICIPIO) !== focusCode; });
-  const profileRows = catalog_().filter(function (row) { return String(row.TIPO) === 'Percentual'; }).map(function (item) {
+  const municipalities = codes.map(function (code) { return municipalityMap[code]; })
+    .filter(Boolean);
+
+  const latestYear = years.length ? years[years.length - 1] : '2025';
+  municipalities.sort(function (a, b) {
+    const av = a.byYear[latestYear] ? a.byYear[latestYear].value : null;
+    const bv = b.byYear[latestYear] ? b.byYear[latestYear].value : null;
+    if (av === null && bv === null) return 0;
+    if (av === null) return 1;
+    if (bv === null) return -1;
+    return bv - av;
+  });
+
+  const catalog = catalog_().filter(function (row) { return String(row.TIPO) === 'Percentual'; });
+  const profileRows = catalog.map(function (item) {
     const id = String(item.ID);
-    const key = (mode === 'enrollments' ? 'PCTPOND_' : 'PCT_') + id;
-    const vals = others.map(function (row) { return numericOrNull_(row[key]); }).filter(function (v) { return v !== null; });
+    const key = pctPrefix + id;
+    const focusValues = allRows
+      .filter(function (row) { return String(row.CO_MUNICIPIO) === focusCode; })
+      .map(function (row) { return numericOrNull_(row[key]); })
+      .filter(function (v) { return v !== null; });
+    const comparableValues = allRows
+      .filter(function (row) { return String(row.CO_MUNICIPIO) !== focusCode; })
+      .map(function (row) { return numericOrNull_(row[key]); })
+      .filter(function (v) { return v !== null; });
+
     return {
-      id: id, label: item.INDICADOR, focus: focus ? numericOrNull_(focus[key]) : null,
-      comparableMean: vals.length ? vals.reduce(function (a, v) { return a + v; }, 0) / vals.length : null,
+      id: id,
+      label: item.INDICADOR,
+      focus: meanNullable_(focusValues),
+      comparableMean: meanNullable_(comparableValues),
     };
+  });
+
+  const scatter = municipalities.map(function (item) {
+    const point = item.byYear[latestYear] || {};
+    return {
+      municipalityCode: item.municipalityCode,
+      municipality: item.municipality,
+      focus: item.focus,
+      year: latestYear,
+      value: point.value == null ? null : point.value,
+      enrollments: point.enrollments == null ? null : point.enrollments,
+      schools: point.schools == null ? null : point.schools,
+    };
+  }).filter(function (row) {
+    return row.value !== null && row.enrollments !== null && row.schools !== null;
   });
 
   return {
-    comparison: { indicatorId: indicatorId, year: year, mode: mode, rows: comparisonRows },
-    profile: { year: year, mode: mode, rows: profileRows },
+    comparison: {
+      indicatorId: indicatorId,
+      years: years,
+      latestYear: latestYear,
+      mode: mode,
+      municipalities: municipalities,
+    },
+    profile: {
+      years: years,
+      mode: mode,
+      rows: profileRows,
+    },
+    scatter: scatter,
   };
 }
+
 function searchSchools(params) {
   params = params || {};
   const config = config_();
@@ -276,8 +336,16 @@ function getSchoolDetail(code) {
   });
   if (!school) throw new Error('Escola não encontrada.');
 
-  const municipality = getRowsByValue_(TAB.MUNICIPIO_ANO, 'CO_MUNICIPIO', municipalityCode).find(function (row) {
+  const municipalityRows = getRowsByValue_(TAB.MUNICIPIO_ANO, 'CO_MUNICIPIO', municipalityCode);
+  const municipality = municipalityRows.find(function (row) {
     return String(row.NU_ANO_CENSO) === '2025';
+  });
+  const comparableCodes = getObjects_(TAB.COMPARAVEIS)
+    .map(function (row) { return String(row.CO_MUNICIPIO); })
+    .filter(function (code) { return code !== municipalityCode; });
+  const comparable2025 = getObjects_(TAB.MUNICIPIO_ANO).filter(function (row) {
+    return String(row.NU_ANO_CENSO) === '2025' &&
+      comparableCodes.indexOf(String(row.CO_MUNICIPIO)) >= 0;
   });
   const catalog = catalog_().filter(function (row) { return String(row.TIPO) === 'Percentual'; });
 
@@ -291,12 +359,16 @@ function getSchoolDetail(code) {
     indicators: catalog.map(function (item) {
       const source = String(item.VARIAVEL_FONTE);
       const id = String(item.ID);
+      const comparableValues = comparable2025
+        .map(function (row) { return numericOrNull_(row['PCT_' + id]); })
+        .filter(function (v) { return v !== null; });
       return {
         id: id,
         label: item.INDICADOR,
         dimension: item.DIMENSAO,
         schoolValue: numericOrNull_(school[source]),
         municipalityValue: municipality ? numericOrNull_(municipality['PCT_' + id]) : null,
+        comparableMean: meanNullable_(comparableValues),
         validMunicipality: municipality ? numericOrNull_(municipality['N_VALIDOS_' + id]) : null,
       };
     }),
@@ -465,6 +537,12 @@ function sumNullable_(values) {
   const numeric = values.map(numericOrNull_).filter(function (value) { return value !== null; });
   if (!numeric.length) return null;
   return numeric.reduce(function (acc, value) { return acc + value; }, 0);
+}
+
+function meanNullable_(values) {
+  const numeric = (values || []).map(numericOrNull_).filter(function (value) { return value !== null; });
+  if (!numeric.length) return null;
+  return numeric.reduce(function (acc, value) { return acc + value; }, 0) / numeric.length;
 }
 
 function normalizeText_(value) {
