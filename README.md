@@ -4,114 +4,127 @@ Projeto acadêmico do curso de Ciência de Dados da UNIVESP voltado à análise 
 
 ## Objetivo
 
-Transformar dados públicos de infraestrutura escolar em informações simples de consultar e comparar, com foco em Guaratinguetá e em recortes que façam sentido após a análise exploratória.
+Transformar dados públicos de infraestrutura escolar em informações simples de consultar, comparar e discutir, com foco em Guaratinguetá e em municípios paulistas de estrutura escolar semelhante.
 
-## Recorte atual
+## Recorte analítico
 
 A análise trabalha com os Censos Escolares de **2023, 2024 e 2025**.
 
 - 2025 é a fotografia mais recente.
 - A unidade longitudinal é escola-ano, identificada por `CO_ENTIDADE` + `NU_ANO_CENSO`.
-- O universo principal mantém somente escolas em funcionamento em cada edição.
+- O universo mantém somente escolas em funcionamento em cada edição.
 - O primeiro recorte territorial é o estado de São Paulo, com Guaratinguetá como município-foco.
-- Séries temporais usam somente variáveis cuja presença e semântica sejam compatíveis entre os três anos.
-
-Em 2025 o INEP mudou o formato de distribuição: infraestrutura permanece na tabela de escolas, enquanto contagens de matrículas passam a uma tabela própria. O pipeline trata essa diferença por junção em `CO_ENTIDADE`.
+- Séries temporais usam somente variáveis cuja presença e semântica sejam compatíveis entre os anos.
+- Em 2025, infraestrutura e matrículas passaram a vir de tabelas distintas; o pipeline recompõe a base por `CO_ENTIDADE`.
 
 ## Pipeline reproduzível
 
-O primeiro pipeline está em `src/censo_pipeline.py`.
+O pipeline principal está em `src/censo_pipeline.py`.
 
 Ele:
 
 1. lê os arquivos oficiais sem edição manual;
 2. seleciona apenas as colunas necessárias;
 3. filtra escolas ativas de São Paulo;
-4. harmoniza o formato de 2023, 2024 e 2025;
+4. harmoniza 2023, 2024 e 2025;
 5. valida chaves, domínios binários e contagens;
 6. gera o painel escola-ano e artefatos de QA.
 
-O notebook `notebooks/01_ingestao_e_qa_censo.ipynb` reproduz o processo no Google Colab usando os arquivos preservados no Google Drive do projeto. O roteiro de execução humana e das evidências esperadas está em [`docs/EXECUCAO_COLAB.md`](docs/EXECUCAO_COLAB.md).
+Os notebooks em `notebooks/` registram as etapas de ingestão, EDA, comparáveis, rede/zona e ponderação por matrículas. **A execução manual no Colab não é requisito de conclusão do projeto**: a validação técnica já foi executada sobre os arquivos oficiais e os resultados consolidados estão documentados no repositório.
 
-## QA do primeiro pipeline
+Detalhes: [`docs/REPRODUTIBILIDADE.md`](docs/REPRODUTIBILIDADE.md).
 
-A validação executada sobre os arquivos oficiais reais resultou em:
+## QA técnico consolidado
 
-| Ano | Escolas ativas em SP | Municípios | Escolas sem `QT_MAT_BAS` |
-| ---: | ---: | ---: | ---: |
-| 2023 | 30.580 | 645 | 367 |
-| 2024 | 30.746 | 645 | 345 |
-| 2025 | 30.817 | 645 | 378 |
+| Checagem | Resultado |
+| --- | ---: |
+| Escolas ativas em SP — 2023 | 30.580 |
+| Escolas ativas em SP — 2024 | 30.746 |
+| Escolas ativas em SP — 2025 | 30.817 |
+| Municípios paulistas por ano | 645 |
+| Linhas escola-ano no painel validado | 92.143 |
+| Duplicidades na chave escola-ano | 0 |
+| Escolas ativas em Guaratinguetá — 2025 | 92 |
 
-Também foram verificados:
+Também foram verificados domínios 0/1 dos indicadores binários, ausência de contagens negativas e consistência entre o QA salvo e o QA recalculado.
 
-- ausência de duplicidades na chave escola-ano;
-- domínio 0/1 nos indicadores binários selecionados;
-- ausência de contagens negativas;
-- presença dos 645 municípios paulistas nos três anos;
-- junção one-to-one válida entre Escola e Matrícula em 2025.
+## Resultados técnicos consolidados
 
-Os arquivos sem matrícula não são automaticamente convertidos para zero; a ausência é preservada para tratamento analítico explícito.
+Os principais resultados descritivos já estão registrados em tabelas prontas para uso no relatório:
 
-## Organização dos dados
+- perfil anual de Guaratinguetá;
+- evolução dos 11 indicadores de infraestrutura;
+- grupo final de 10 municípios comparáveis;
+- diferença entre percentual simples de escolas e ponderação por matrículas;
+- regras de interpretação e limitações.
 
-Os arquivos oficiais de origem e os dados de trabalho permanecem no Google Drive compartilhado e não são versionados integralmente neste repositório.
+Ver [`docs/RESULTADOS_TECNICOS.md`](docs/RESULTADOS_TECNICOS.md).
 
-Não adotamos uma arquitetura obrigatória de camadas como bronze/silver/gold. Etapas intermediárias existem somente quando cumprem uma função técnica clara.
+## Base final de consumo
 
-A estrutura atual distingue:
+`src/build_consumption.py` produz as tabelas finais usadas pelo Web App.
 
-- fonte original, preservada sem edição;
-- tratamentos e base analítica para EDA;
-- base final de consumo do Web App.
+A base inclui:
 
-A base final de consumo do Web App já foi materializada em Google Sheets no Drive do projeto. Sua construção é reproduzível por `src/build_consumption.py`; a estrutura está documentada em [`docs/BASE_CONSUMO.md`](docs/BASE_CONSUMO.md).
+- `CONFIG`;
+- `CATALOGO`;
+- `COMPARAVEIS`;
+- `MUNICIPIO_ANO`;
+- `MUNICIPIO_REDE_2025`;
+- `MUNICIPIO_ZONA_2025`;
+- `ESCOLAS_2025`;
+- `QA`.
+
+Estrutura e controles: [`docs/BASE_CONSUMO.md`](docs/BASE_CONSUMO.md).
+
+## Municípios comparáveis
+
+A seleção não usa os próprios indicadores de infraestrutura. O método considera porte e estrutura escolar, incluindo número de escolas, matrículas, mediana de matrículas por escola, composição por rede e participação rural.
+
+O grupo final de 2025 está documentado em [`docs/METODO_COMPARAVEIS.md`](docs/METODO_COMPARAVEIS.md).
+
+## Ponderação por matrículas
+
+A leitura principal do projeto é **percentual de escolas com o item**. A ponderação por matrículas foi mantida como visão complementar, porque responde a uma pergunta diferente: em que medida os estudantes estão concentrados em escolas que possuem determinada infraestrutura.
+
+Detalhes e diferenças observadas: [`docs/PONDERACAO_MATRICULAS.md`](docs/PONDERACAO_MATRICULAS.md).
+
+## Web App
+
+A aplicação final foi construída com Google Apps Script + HTML/CSS/JavaScript e consome a base final em Google Sheets.
+
+As quatro áreas principais são:
+
+1. **Visão Geral**
+2. **Comparações**
+3. **Escolas**
+4. **Sobre os dados**
+
+**Aplicação publicada:**  
+https://script.google.com/macros/s/AKfycbwN7KphXDuU-Yhjjv_C9GdCNlhHKb1IeP50xz_Thw_Q6HAXT4woKL-AKjYW26Tm-cvhOQ/exec
+
+A arquitetura e as decisões de interface estão em [`docs/WIREFRAME_MVP.md`](docs/WIREFRAME_MVP.md).
+
+## Etapa final acadêmica
+
+O desenvolvimento técnico está concluído. O único material deliberadamente deixado aberto é a camada de **leitura humana do produto**: seleção de prints, interpretação crítica do dashboard e preparação da demonstração/vídeo.
+
+Foi criado um roteiro específico para essa entrega em [`docs/ANALISE_FINAL_EQUIPE.md`](docs/ANALISE_FINAL_EQUIPE.md). Ele parte dos resultados técnicos já produzidos e não exige reexecutar notebooks apenas para gerar evidências.
 
 ## Papel deste repositório
 
-Este repositório é a vitrine técnica pública do projeto e o histórico de checkpoints reproduzíveis.
+Este repositório funciona como vitrine técnica pública e histórico de checkpoints reproduzíveis.
 
-Entram aqui, quando consolidados:
+Entram aqui:
 
-- notebooks e scripts;
-- artefatos de dados leves;
-- informações necessárias para compreender ou reproduzir os resultados;
+- scripts e notebooks;
+- documentação metodológica;
+- resultados técnicos consolidados;
 - código do Web App;
-- links e resultados finais do projeto.
+- link público da aplicação;
+- material-base para relatório e apresentação.
 
-A organização operacional do grupo, o Kanban e os arquivos vivos de trabalho permanecem no Google Drive compartilhado.
-
-## EDA e base de consumo
-
-A camada analítica e a preparação da base de consumo estão consolidadas no repositório:
-
-- `notebooks/02_eda_guaratingueta.ipynb`: perfil descritivo de Guaratinguetá, infraestrutura, rede, zona e permanência das escolas;
-- `notebooks/03_comparaveis_sp.ipynb`: perfil dos 645 municípios paulistas e construção de um pool exploratório de comparáveis;
-- `notebooks/04_rede_zona.ipynb`: diferenças de infraestrutura por rede administrativa e localização urbana/rural;
-- `notebooks/05_ponderacao_matriculas.ipynb`: teste de percentual simples de escolas versus ponderação por matrículas;
-- `src/eda.py`: funções reutilizáveis dessas análises;
-- [`docs/METODO_COMPARAVEIS.md`](docs/METODO_COMPARAVEIS.md): critérios e limites do método de comparabilidade;
-- [`docs/PONDERACAO_MATRICULAS.md`](docs/PONDERACAO_MATRICULAS.md): regra e interpretação do teste de ponderação.
-
-A validação técnica de P04 e a EDA foram executadas sobre os arquivos oficiais. As execuções manuais no Colab permanecem como trilha adicional de reprodução e evidência do grupo.
-
-## Base de consumo
-
-`src/build_consumption.py` produz as tabelas finais por escola e agregadas usadas pelo Web App. O escopo inclui 2025 como fotografia principal, tendências 2023–2025, comparações por rede/zona, consulta por escola e grupo padrão de 10 municípios comparáveis.
-
-## Web App — MVP
-
-A arquitetura funcional do MVP está documentada em [`docs/WIREFRAME_MVP.md`](docs/WIREFRAME_MVP.md). O código final do Web App está em `webapp/`, com backend em Apps Script e frontend HTML/CSS/JavaScript apontando para a base final de consumo.
-
-O MVP foi organizado em quatro telas: Visão Geral, Comparações, Escolas e Sobre os dados.
-
-**Aplicação publicada:** https://script.google.com/macros/s/AKfycbwN7KphXDuU-Yhjjv_C9GdCNlhHKb1IeP50xz_Thw_Q6HAXT4woKL-AKjYW26Tm-cvhOQ/exec
-
-A versão publicada corresponde ao fechamento técnico do MVP em 24/09/2026, após as rodadas de ajuste de navegação, visualizações, comparação temporal, consulta por escola e desempenho de carregamento.
-
-## Situação atual
-
-O desenvolvimento técnico principal está concluído. Permanecem como etapas acadêmicas e de apresentação a preparação da demonstração/vídeo e as execuções manuais de notebooks mantidas como trilha adicional de reprodução e evidência.
+Arquivos oficiais de origem, bases de trabalho e organização operacional do grupo permanecem no Google Drive compartilhado.
 
 ## Equipe
 
