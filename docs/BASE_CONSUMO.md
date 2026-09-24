@@ -2,20 +2,20 @@
 
 A base de consumo é produzida por `src/build_consumption.py` a partir do painel escola-ano validado.
 
-Ela foi desenhada para reduzir processamento no Apps Script e deixar as regras analíticas explícitas antes da implementação do frontend.
+Ela reduz processamento no Apps Script e mantém as regras analíticas explícitas antes da camada de visualização.
 
 ## Tabelas
 
 - `CONFIG`: parâmetros estáveis do MVP, como ano padrão, município-foco e limite de base pequena.
 - `CATALOGO`: indicadores finais, variáveis-fonte e regras de cálculo.
-- `COMPARAVEIS`: Guaratinguetá + grupo padrão de 10 municípios comparáveis em 2025.
-- `MUNICIPIO_ANO`: agregados municipais 2023–2025 para tendências.
+- `COMPARAVEIS`: Guaratinguetá + grupo final de 10 municípios comparáveis em 2025.
+- `MUNICIPIO_ANO`: agregados municipais 2023–2025 para tendências e comparações.
 - `MUNICIPIO_REDE_2025`: agregados municipais por dependência administrativa.
 - `MUNICIPIO_ZONA_2025`: agregados municipais por localização urbana/rural.
 - `ESCOLAS_2025`: base por escola para consulta individual.
-- `QA`: controles de integridade e contagens esperadas.
+- `QA`: controles de integridade e contagens finais.
 
-## Regras principais
+## Regras finais
 
 - 2025 é a fotografia padrão do MVP.
 - Tendências usam 2023–2025 quando a variável é semanticamente comparável.
@@ -25,12 +25,35 @@ Ela foi desenhada para reduzir processamento no Apps Script e deixar as regras a
 - Infraestrutura não entra no critério de seleção dos municípios comparáveis.
 - Índice composto e machine learning ficam fora do MVP.
 
-## QA esperado
+## QA consolidado
 
-- 30.817 escolas ativas em São Paulo em 2025.
-- 92 escolas ativas em Guaratinguetá em 2025.
-- 1.935 linhas em `MUNICIPIO_ANO` = 645 municípios × 3 anos.
-- 3 recortes por rede e 2 por zona para Guaratinguetá em 2025.
-- 10 municípios no grupo comparável padrão, além do município-foco.
+| Checagem | Status | Valor |
+| --- | --- | ---: |
+| `ESCOLAS_2025` | PASS | 30.817 |
+| Guaratinguetá — escolas 2025 | PASS | 92 |
+| `MUNICIPIO_ANO` | PASS | 1.935 |
+| Guaratinguetá — anos | PASS | 3 |
+| `MUNICIPIO_REDE_2025` | PASS | 1.724 |
+| Guaratinguetá — redes | PASS | 3 |
+| `MUNICIPIO_ZONA_2025` | PASS | 924 |
+| Guaratinguetá — zonas | PASS | 2 |
+| `COMPARAVEIS` | PASS | 10 + foco |
+| `CATALOGO` | PASS | 14 |
 
-Os arquivos de origem permanecem fora do GitHub; o repositório versiona o código e a documentação necessários para reconstruir a base.
+Os campos percentuais estão armazenados numericamente entre 0 e 1. A base final preserva a distinção entre valor ausente e valor zero.
+
+## Rastreabilidade
+
+A construção da base está versionada em `src/build_consumption.py` e deriva do painel escola-ano validado. A execução manual de notebooks não é requisito adicional para aceitar a base final: o QA acima é o checkpoint técnico utilizado pelo Web App publicado.
+
+## Consumo pela aplicação
+
+O Web App consulta a planilha final por meio do Apps Script. Para reduzir latência:
+
+- a Visão Geral é priorizada no carregamento;
+- outras áreas são carregadas sob demanda;
+- a lista de escolas de Guaratinguetá é lida uma vez e filtrada no navegador;
+- leituras do backend usam cache temporário;
+- a consulta por escola evita carregar repetidamente a tabela completa de São Paulo.
+
+Resultados derivados desta base estão consolidados em [`RESULTADOS_TECNICOS.md`](RESULTADOS_TECNICOS.md).
