@@ -493,7 +493,7 @@
         responsive:true,maintainAspectRatio:false,
         plugins:{
           legend:{display:false},
-          tooltip:{callbacks:{label:c=>{const r=rows[c.dataIndex];return[fmtPct(r.value),'Base válida: '+fmtNumber(r.valid)+' escolas'+(r.baseSmall?' · base pequena':'')]}},
+          tooltip:{callbacks:{label:c=>{const r=rows[c.dataIndex];return[fmtPct(r.value),'Base válida: '+fmtNumber(r.valid)+' escolas'+(r.baseSmall?' · base pequena':'')]}}},
           valueLabels:{display:true,formatter:v=>fmtPct100(v)}
         },
         scales:{y:pctScale(),x:{grid:{display:false},ticks:{font:{size:10}}}}
