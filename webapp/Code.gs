@@ -18,30 +18,34 @@ function doGet() {
 }
 
 function getBootstrapData() {
-  const configRows = getObjects_(TAB.CONFIG);
-  const config = {};
-  configRows.forEach(function (row) {
-    config[String(row.CHAVE)] = row.VALOR;
-  });
-
-  const catalog = getObjects_(TAB.CATALOGO);
+  const config = config_();
+  const catalog = catalog_();
   const comparables = getObjects_(TAB.COMPARAVEIS);
-  const schools = getObjects_(TAB.ESCOLAS)
-    .filter(function (row) {
-      return String(row.CO_MUNICIPIO) === String(config.MUNICIPIO_FOCO || '3518404');
-    });
-
-  const redes = unique_(schools.map(function (row) { return row.REDE; }).filter(Boolean));
-  const zonas = unique_(schools.map(function (row) { return row.ZONA; }).filter(Boolean));
+  const municipalityCode = String(config.MUNICIPIO_FOCO || '3518404');
+  const schools = getRowsByValue_(TAB.ESCOLAS, 'CO_MUNICIPIO', municipalityCode);
+  const municipalityRows = getRowsByValue_(TAB.MUNICIPIO_ANO, 'CO_MUNICIPIO', municipalityCode);
+  const defaultYear = String(config.ANO_PADRAO || '2025');
+  const defaultRow = municipalityRows.find(function (row) { return String(row.NU_ANO_CENSO) === defaultYear; });
+  const initialOverview = defaultRow ? {
+    municipalityCode: municipalityCode,
+    year: defaultYear,
+    mode: 'schools',
+    rede: '',
+    zona: '',
+    snapshot: rowToSnapshot_(defaultRow, catalog, config),
+    history: municipalityRows.sort(function (a, b) { return Number(a.NU_ANO_CENSO) - Number(b.NU_ANO_CENSO); })
+      .map(function (row) { return rowToSnapshot_(row, catalog, config); }),
+  } : null;
 
   return {
     config: config,
     catalog: catalog,
     comparables: comparables,
+    initialOverview: initialOverview,
     filters: {
       years: ['2023', '2024', '2025'],
-      redes: redes,
-      zonas: zonas,
+      redes: unique_(schools.map(function (row) { return row.REDE; }).filter(Boolean)),
+      zonas: unique_(schools.map(function (row) { return row.ZONA; }).filter(Boolean)),
     },
   };
 }
@@ -49,6 +53,7 @@ function getBootstrapData() {
 function getOverviewData(filters) {
   filters = filters || {};
   const config = config_();
+  const catalog = catalog_();
   const municipalityCode = String(filters.municipalityCode || config.MUNICIPIO_FOCO || '3518404');
   const year = String(filters.year || config.ANO_PADRAO || '2025');
   const mode = String(filters.mode || 'schools');
@@ -61,24 +66,17 @@ function getOverviewData(filters) {
 
   let snapshot;
   if (year === '2025' && (rede || zona)) {
-    snapshot = aggregateSchools2025_(municipalityCode, rede, zona);
+    snapshot = aggregateFocusSchools2025_(municipalityCode, rede, zona, catalog, config);
   } else {
-    const rows = getObjects_(TAB.MUNICIPIO_ANO).filter(function (row) {
-      return String(row.CO_MUNICIPIO) === municipalityCode &&
-        String(row.NU_ANO_CENSO) === year;
-    });
-    if (!rows.length) throw new Error('Recorte municipal não encontrado.');
-    snapshot = rowToSnapshot_(rows[0]);
+    const rows = getRowsByValue_(TAB.MUNICIPIO_ANO, 'CO_MUNICIPIO', municipalityCode);
+    const row = rows.find(function (item) { return String(item.NU_ANO_CENSO) === year; });
+    if (!row) throw new Error('Recorte municipal não encontrado.');
+    snapshot = rowToSnapshot_(row, catalog, config);
   }
 
-  const history = getObjects_(TAB.MUNICIPIO_ANO)
-    .filter(function (row) {
-      return String(row.CO_MUNICIPIO) === municipalityCode;
-    })
-    .sort(function (a, b) {
-      return Number(a.NU_ANO_CENSO) - Number(b.NU_ANO_CENSO);
-    })
-    .map(rowToSnapshot_);
+  const history = getRowsByValue_(TAB.MUNICIPIO_ANO, 'CO_MUNICIPIO', municipalityCode)
+    .sort(function (a, b) { return Number(a.NU_ANO_CENSO) - Number(b.NU_ANO_CENSO); })
+    .map(function (row) { return rowToSnapshot_(row, catalog, config); });
 
   return {
     municipalityCode: municipalityCode,
@@ -91,25 +89,56 @@ function getOverviewData(filters) {
   };
 }
 
+function getBreakdownData(params) {
+  params = params || {};
+  const config = config_();
+  const municipalityCode = String(config.MUNICIPIO_FOCO || '3518404');
+  const indicatorId = String(params.indicatorId || 'internet');
+  const mode = String(params.mode || 'schools');
+  const valueKey = (mode === 'enrollments' ? 'PCTPOND_' : 'PCT_') + indicatorId;
+  const validKey = (mode === 'enrollments' ? 'N_VALIDOS_POND_' : 'N_VALIDOS_') + indicatorId;
+
+  const networkRows = getRowsByValue_(TAB.MUNICIPIO_REDE, 'CO_MUNICIPIO', municipalityCode);
+  const zoneRows = getRowsByValue_(TAB.MUNICIPIO_ZONA, 'CO_MUNICIPIO', municipalityCode);
+
+  return {
+    indicatorId: indicatorId,
+    mode: mode,
+    networks: networkRows.map(function (row) {
+      return {
+        label: row.REDE,
+        value: numericOrNull_(row[valueKey]),
+        valid: numericOrNull_(row[validKey]),
+        schools: numericOrNull_(row.N_ESCOLAS),
+        baseSmall: numericOrNull_(row.N_ESCOLAS) !== null && numericOrNull_(row.N_ESCOLAS) < Number(config.BASE_PEQUENA_LIMITE || 5),
+      };
+    }),
+    zones: zoneRows.map(function (row) {
+      return {
+        label: row.ZONA,
+        value: numericOrNull_(row[valueKey]),
+        valid: numericOrNull_(row[validKey]),
+        schools: numericOrNull_(row.N_ESCOLAS),
+        baseSmall: Boolean(row.BASE_PEQUENA),
+      };
+    }),
+  };
+}
+
 function getComparisonData(params) {
   params = params || {};
   const config = config_();
   const indicatorId = String(params.indicatorId || 'internet');
   const year = String(params.year || config.ANO_PADRAO || '2025');
   const mode = String(params.mode || 'schools');
-
-  const comparisonCodes = getObjects_(TAB.COMPARAVEIS)
-    .map(function (row) { return String(row.CO_MUNICIPIO); });
-
-  const rows = getObjects_(TAB.MUNICIPIO_ANO)
-    .filter(function (row) {
-      return String(row.NU_ANO_CENSO) === year &&
-        comparisonCodes.indexOf(String(row.CO_MUNICIPIO)) >= 0;
-    });
-
+  const comparisonCodes = getObjects_(TAB.COMPARAVEIS).map(function (row) { return String(row.CO_MUNICIPIO); });
   const pctKey = (mode === 'enrollments' ? 'PCTPOND_' : 'PCT_') + indicatorId;
   const validKey = (mode === 'enrollments' ? 'N_VALIDOS_POND_' : 'N_VALIDOS_') + indicatorId;
   const focusCode = String(config.MUNICIPIO_FOCO || '3518404');
+
+  const rows = getObjects_(TAB.MUNICIPIO_ANO).filter(function (row) {
+    return String(row.NU_ANO_CENSO) === year && comparisonCodes.indexOf(String(row.CO_MUNICIPIO)) >= 0;
+  });
 
   const output = rows.map(function (row) {
     return {
@@ -130,14 +159,87 @@ function getComparisonData(params) {
     return b.value - a.value;
   });
 
+  return { indicatorId: indicatorId, year: year, mode: mode, rows: output };
+}
+
+function getComparableProfileData(params) {
+  params = params || {};
+  const config = config_();
+  const year = String(params.year || config.ANO_PADRAO || '2025');
+  const mode = String(params.mode || 'schools');
+  const focusCode = String(config.MUNICIPIO_FOCO || '3518404');
+  const codes = getObjects_(TAB.COMPARAVEIS).map(function (row) { return String(row.CO_MUNICIPIO); });
+  const rows = getObjects_(TAB.MUNICIPIO_ANO).filter(function (row) {
+    return String(row.NU_ANO_CENSO) === year && codes.indexOf(String(row.CO_MUNICIPIO)) >= 0;
+  });
+  const focus = rows.find(function (row) { return String(row.CO_MUNICIPIO) === focusCode; });
+  const others = rows.filter(function (row) { return String(row.CO_MUNICIPIO) !== focusCode; });
+  const catalog = catalog_().filter(function (row) { return String(row.TIPO) === 'Percentual'; });
+
   return {
-    indicatorId: indicatorId,
     year: year,
     mode: mode,
-    rows: output,
+    rows: catalog.map(function (item) {
+      const id = String(item.ID);
+      const key = (mode === 'enrollments' ? 'PCTPOND_' : 'PCT_') + id;
+      const vals = others.map(function (row) { return numericOrNull_(row[key]); }).filter(function (v) { return v !== null; });
+      return {
+        id: id,
+        label: item.INDICADOR,
+        focus: focus ? numericOrNull_(focus[key]) : null,
+        comparableMean: vals.length ? vals.reduce(function (a, v) { return a + v; }, 0) / vals.length : null,
+      };
+    }),
   };
 }
 
+function getComparisonBundle(params) {
+  params = params || {};
+  const config = config_();
+  const year = String(params.year || config.ANO_PADRAO || '2025');
+  const mode = String(params.mode || 'schools');
+  const indicatorId = String(params.indicatorId || 'internet');
+  const focusCode = String(config.MUNICIPIO_FOCO || '3518404');
+  const codes = getObjects_(TAB.COMPARAVEIS).map(function (row) { return String(row.CO_MUNICIPIO); });
+  const rows = getObjects_(TAB.MUNICIPIO_ANO).filter(function (row) {
+    return String(row.NU_ANO_CENSO) === year && codes.indexOf(String(row.CO_MUNICIPIO)) >= 0;
+  });
+  const valueKey = (mode === 'enrollments' ? 'PCTPOND_' : 'PCT_') + indicatorId;
+  const validKey = (mode === 'enrollments' ? 'N_VALIDOS_POND_' : 'N_VALIDOS_') + indicatorId;
+  const comparisonRows = rows.map(function (row) {
+    return {
+      municipalityCode: String(row.CO_MUNICIPIO),
+      municipality: row.NO_MUNICIPIO,
+      value: numericOrNull_(row[valueKey]),
+      valid: numericOrNull_(row[validKey]),
+      schools: numericOrNull_(row.N_ESCOLAS),
+      enrollments: numericOrNull_(row.QT_MAT_BAS),
+      focus: String(row.CO_MUNICIPIO) === focusCode,
+    };
+  }).sort(function (a, b) {
+    if (a.value === null && b.value === null) return 0;
+    if (a.value === null) return 1;
+    if (b.value === null) return -1;
+    return b.value - a.value;
+  });
+
+  const focus = rows.find(function (row) { return String(row.CO_MUNICIPIO) === focusCode; });
+  const others = rows.filter(function (row) { return String(row.CO_MUNICIPIO) !== focusCode; });
+  const profileRows = catalog_().filter(function (row) { return String(row.TIPO) === 'Percentual'; }).map(function (item) {
+    const id = String(item.ID);
+    const key = (mode === 'enrollments' ? 'PCTPOND_' : 'PCT_') + id;
+    const vals = others.map(function (row) { return numericOrNull_(row[key]); }).filter(function (v) { return v !== null; });
+    return {
+      id: id, label: item.INDICADOR, focus: focus ? numericOrNull_(focus[key]) : null,
+      comparableMean: vals.length ? vals.reduce(function (a, v) { return a + v; }, 0) / vals.length : null,
+    };
+  });
+
+  return {
+    comparison: { indicatorId: indicatorId, year: year, mode: mode, rows: comparisonRows },
+    profile: { year: year, mode: mode, rows: profileRows },
+  };
+}
 function searchSchools(params) {
   params = params || {};
   const config = config_();
@@ -146,9 +248,8 @@ function searchSchools(params) {
   const rede = String(params.rede || '');
   const zona = String(params.zona || '');
 
-  return getObjects_(TAB.ESCOLAS)
+  return getRowsByValue_(TAB.ESCOLAS, 'CO_MUNICIPIO', municipalityCode)
     .filter(function (row) {
-      if (String(row.CO_MUNICIPIO) !== municipalityCode) return false;
       if (rede && String(row.REDE) !== rede) return false;
       if (zona && String(row.ZONA) !== zona) return false;
       if (query && normalizeText_(String(row.NO_ENTIDADE)).indexOf(query) < 0) return false;
@@ -170,34 +271,15 @@ function getSchoolDetail(code) {
   const config = config_();
   const municipalityCode = String(config.MUNICIPIO_FOCO || '3518404');
   const codeText = String(code);
-
-  const school = getObjects_(TAB.ESCOLAS).find(function (row) {
-    return String(row.CO_ENTIDADE) === codeText &&
-      String(row.CO_MUNICIPIO) === municipalityCode;
+  const school = getRowsByValue_(TAB.ESCOLAS, 'CO_MUNICIPIO', municipalityCode).find(function (row) {
+    return String(row.CO_ENTIDADE) === codeText;
   });
-
   if (!school) throw new Error('Escola não encontrada.');
 
-  const municipality = getObjects_(TAB.MUNICIPIO_ANO).find(function (row) {
-    return String(row.CO_MUNICIPIO) === municipalityCode &&
-      String(row.NU_ANO_CENSO) === '2025';
+  const municipality = getRowsByValue_(TAB.MUNICIPIO_ANO, 'CO_MUNICIPIO', municipalityCode).find(function (row) {
+    return String(row.NU_ANO_CENSO) === '2025';
   });
-
-  const catalog = getObjects_(TAB.CATALOGO)
-    .filter(function (row) { return String(row.TIPO) === 'Percentual'; });
-
-  const indicators = catalog.map(function (item) {
-    const source = String(item.VARIAVEL_FONTE);
-    const id = String(item.ID);
-    return {
-      id: id,
-      label: item.INDICADOR,
-      dimension: item.DIMENSAO,
-      schoolValue: numericOrNull_(school[source]),
-      municipalityValue: municipality ? numericOrNull_(municipality['PCT_' + id]) : null,
-      validMunicipality: municipality ? numericOrNull_(municipality['N_VALIDOS_' + id]) : null,
-    };
-  });
+  const catalog = catalog_().filter(function (row) { return String(row.TIPO) === 'Percentual'; });
 
   return {
     code: String(school.CO_ENTIDADE),
@@ -206,28 +288,35 @@ function getSchoolDetail(code) {
     zona: school.ZONA,
     rooms: numericOrNull_(school.QT_SALAS_UTILIZADAS),
     enrollments: numericOrNull_(school.QT_MAT_BAS),
-    indicators: indicators,
+    indicators: catalog.map(function (item) {
+      const source = String(item.VARIAVEL_FONTE);
+      const id = String(item.ID);
+      return {
+        id: id,
+        label: item.INDICADOR,
+        dimension: item.DIMENSAO,
+        schoolValue: numericOrNull_(school[source]),
+        municipalityValue: municipality ? numericOrNull_(municipality['PCT_' + id]) : null,
+        validMunicipality: municipality ? numericOrNull_(municipality['N_VALIDOS_' + id]) : null,
+      };
+    }),
   };
 }
 
 function getMethodologyData() {
   return {
     config: getObjects_(TAB.CONFIG),
-    catalog: getObjects_(TAB.CATALOGO),
+    catalog: catalog_(),
     comparables: getObjects_(TAB.COMPARAVEIS),
   };
 }
 
-function aggregateSchools2025_(municipalityCode, rede, zona) {
-  const rows = getObjects_(TAB.ESCOLAS).filter(function (row) {
-    if (String(row.CO_MUNICIPIO) !== municipalityCode) return false;
+function aggregateFocusSchools2025_(municipalityCode, rede, zona, catalog, config) {
+  const rows = getRowsByValue_(TAB.ESCOLAS, 'CO_MUNICIPIO', municipalityCode).filter(function (row) {
     if (rede && String(row.REDE) !== rede) return false;
     if (zona && String(row.ZONA) !== zona) return false;
     return true;
   });
-
-  const catalog = getObjects_(TAB.CATALOGO)
-    .filter(function (row) { return String(row.TIPO) === 'Percentual'; });
 
   const snapshot = {
     year: '2025',
@@ -239,24 +328,15 @@ function aggregateSchools2025_(municipalityCode, rede, zona) {
     indicators: {},
   };
 
-  catalog.forEach(function (item) {
+  catalog.filter(function (item) { return String(item.TIPO) === 'Percentual'; }).forEach(function (item) {
     const source = String(item.VARIAVEL_FONTE);
     const id = String(item.ID);
     const valid = rows.filter(function (row) { return isNumberLike_(row[source]); });
-    const simple = valid.length
-      ? valid.reduce(function (acc, row) { return acc + Number(row[source]); }, 0) / valid.length
-      : null;
-
-    const weightedRows = valid.filter(function (row) {
-      return isNumberLike_(row.QT_MAT_BAS);
-    });
-    const denominator = weightedRows.reduce(function (acc, row) {
-      return acc + Number(row.QT_MAT_BAS);
-    }, 0);
+    const simple = valid.length ? valid.reduce(function (acc, row) { return acc + Number(row[source]); }, 0) / valid.length : null;
+    const weightedRows = valid.filter(function (row) { return isNumberLike_(row.QT_MAT_BAS); });
+    const denominator = weightedRows.reduce(function (acc, row) { return acc + Number(row.QT_MAT_BAS); }, 0);
     const weighted = denominator > 0
-      ? weightedRows.reduce(function (acc, row) {
-          return acc + Number(row[source]) * Number(row.QT_MAT_BAS);
-        }, 0) / denominator
+      ? weightedRows.reduce(function (acc, row) { return acc + Number(row[source]) * Number(row.QT_MAT_BAS); }, 0) / denominator
       : null;
 
     snapshot.indicators[id] = {
@@ -264,27 +344,24 @@ function aggregateSchools2025_(municipalityCode, rede, zona) {
       weighted: weighted,
       valid: valid.length,
       weightedValid: weightedRows.length,
-      baseSmall: valid.length < Number(config_().BASE_PEQUENA_LIMITE || 5),
+      baseSmall: valid.length < Number(config.BASE_PEQUENA_LIMITE || 5),
     };
   });
 
   return snapshot;
 }
 
-function rowToSnapshot_(row) {
-  const catalog = getObjects_(TAB.CATALOGO)
-    .filter(function (item) { return String(item.TIPO) === 'Percentual'; });
+function rowToSnapshot_(row, catalog, config) {
   const indicators = {};
-
-  catalog.forEach(function (item) {
+  catalog.filter(function (item) { return String(item.TIPO) === 'Percentual'; }).forEach(function (item) {
     const id = String(item.ID);
+    const valid = numericOrNull_(row['N_VALIDOS_' + id]);
     indicators[id] = {
       simple: numericOrNull_(row['PCT_' + id]),
       weighted: numericOrNull_(row['PCTPOND_' + id]),
-      valid: numericOrNull_(row['N_VALIDOS_' + id]),
+      valid: valid,
       weightedValid: numericOrNull_(row['N_VALIDOS_POND_' + id]),
-      baseSmall: numericOrNull_(row['N_VALIDOS_' + id]) !== null &&
-        numericOrNull_(row['N_VALIDOS_' + id]) < Number(config_().BASE_PEQUENA_LIMITE || 5),
+      baseSmall: valid !== null && valid < Number(config.BASE_PEQUENA_LIMITE || 5),
     };
   });
 
@@ -300,44 +377,73 @@ function rowToSnapshot_(row) {
 }
 
 function config_() {
-  const rows = getObjects_(TAB.CONFIG);
   const config = {};
-  rows.forEach(function (row) {
-    config[String(row.CHAVE)] = row.VALOR;
-  });
+  getObjects_(TAB.CONFIG).forEach(function (row) { config[String(row.CHAVE)] = row.VALOR; });
   return config;
 }
 
-function getObjects_(sheetName) {
+function catalog_() {
+  return getObjects_(TAB.CATALOGO);
+}
+
+function getRowsByValue_(sheetName, keyColumn, keyValue) {
   const cache = CacheService.getScriptCache();
-  const cacheKey = 'tab:' + sheetName;
+  const cacheKey = 'focus:v2:' + sheetName + ':' + keyColumn + ':' + keyValue;
   const cached = cache.get(cacheKey);
   if (cached) return JSON.parse(cached);
 
   const sheet = SpreadsheetApp.openById(DATA_SPREADSHEET_ID).getSheetByName(sheetName);
   if (!sheet) throw new Error('Aba não encontrada: ' + sheetName);
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return [];
 
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  const keyIndex = headers.indexOf(keyColumn);
+  if (keyIndex < 0) throw new Error('Coluna não encontrada em ' + sheetName + ': ' + keyColumn);
+
+  const keys = sheet.getRange(2, keyIndex + 1, lastRow - 1, 1).getValues();
+  let first = -1;
+  let last = -1;
+  for (let i = 0; i < keys.length; i++) {
+    if (String(keys[i][0]) === String(keyValue)) {
+      if (first < 0) first = i + 2;
+      last = i + 2;
+    }
+  }
+  if (first < 0) return [];
+
+  const values = sheet.getRange(first, 1, last - first + 1, lastCol).getValues();
+  const rows = values.map(function (row) {
+    const obj = {};
+    headers.forEach(function (header, index) { obj[header] = row[index]; });
+    return obj;
+  }).filter(function (row) { return String(row[keyColumn]) === String(keyValue); });
+
+  try { cache.put(cacheKey, JSON.stringify(rows), 1800); } catch (err) {}
+  return rows;
+}
+
+function getObjects_(sheetName) {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = 'tab:v2:' + sheetName;
+  const cached = cache.get(cacheKey);
+  if (cached) return JSON.parse(cached);
+
+  const sheet = SpreadsheetApp.openById(DATA_SPREADSHEET_ID).getSheetByName(sheetName);
+  if (!sheet) throw new Error('Aba não encontrada: ' + sheetName);
   const values = sheet.getDataRange().getValues();
   if (!values.length) return [];
   const headers = values.shift().map(String);
+  const objects = values.filter(function (row) {
+    return row.some(function (value) { return value !== '' && value !== null; });
+  }).map(function (row) {
+    const obj = {};
+    headers.forEach(function (header, index) { obj[header] = row[index]; });
+    return obj;
+  });
 
-  const objects = values
-    .filter(function (row) {
-      return row.some(function (value) { return value !== '' && value !== null; });
-    })
-    .map(function (row) {
-      const obj = {};
-      headers.forEach(function (header, index) {
-        obj[header] = row[index];
-      });
-      return obj;
-    });
-
-  try {
-    cache.put(cacheKey, JSON.stringify(objects), 300);
-  } catch (err) {
-    // Tabelas grandes podem exceder o limite do cache; a leitura direta permanece válida.
-  }
+  try { cache.put(cacheKey, JSON.stringify(objects), 900); } catch (err) {}
   return objects;
 }
 
@@ -356,17 +462,11 @@ function isNumberLike_(value) {
 }
 
 function sumNullable_(values) {
-  const numeric = values
-    .map(numericOrNull_)
-    .filter(function (value) { return value !== null; });
+  const numeric = values.map(numericOrNull_).filter(function (value) { return value !== null; });
   if (!numeric.length) return null;
   return numeric.reduce(function (acc, value) { return acc + value; }, 0);
 }
 
 function normalizeText_(value) {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
