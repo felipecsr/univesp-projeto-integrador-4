@@ -4,7 +4,7 @@
 
 Disponibilizar uma leitura simples da infraestrutura escolar de Guaratinguetá, com visão atual, tendência temporal, comparações com municípios estruturalmente semelhantes e consulta por escola.
 
-O MVP terá **quatro telas**. A navegação principal fica em uma **barra lateral à esquerda** no desktop e se adapta para navegação horizontal em telas pequenas. Rede, zona, série temporal e ponderação são controles dentro das telas; não viram páginas próprias.
+O MVP final possui **quatro telas**. A navegação principal fica em uma **barra lateral à esquerda** no desktop e se adapta para navegação horizontal em telas pequenas. Rede, zona, série temporal e ponderação são controles dentro das telas; não viram páginas próprias.
 
 ## Navegação
 
@@ -15,7 +15,7 @@ Menu principal:
 3. **Escolas**
 4. **Sobre os dados**
 
-A aplicação abre em **Visão Geral**.
+A aplicação publicada abre em **Visão Geral**.
 
 ---
 
@@ -143,10 +143,6 @@ A consulta por escola usa a fotografia de 2025, que é a base final por escola d
 | Escolas | ESCOLAS_2025, MUNICIPIO_ANO |
 | Sobre os dados | CONFIG, CATALOGO |
 
-## Critério de fechamento de A01
-
-A01 está concluída quando estas quatro telas, seus controles e suas regras de interação forem aceitos como arquitetura funcional do MVP. Ajustes visuais finos permanecem para A03/A04.
-
 ## Desempenho de carregamento
 
 - A aplicação carrega primeiro apenas a Visão Geral.
@@ -155,10 +151,19 @@ A01 está concluída quando estas quatro telas, seus controles e suas regras de 
 - O backend evita ler repetidamente a tabela completa de escolas de SP: localiza e lê somente o bloco do município-foco, com cache temporário.
 - A configuração inicial pode ser reaproveitada no navegador por curto período para reduzir roundtrips sem alterar a fonte oficial.
 
-## Convenções visuais da versão atual
+## Convenções visuais da versão final
 
 - Valores percentuais aparecem diretamente nas barras e nos pontos da série temporal; tooltip permanece como detalhe adicional.
 - Guaratinguetá usa destaque amarelo nas comparações.
 - A barra de filtros muda discretamente de tonalidade quando fica presa ao topo durante a rolagem.
 - A interface mostra estado de **Atualizando dados…** e **Dados carregados** durante chamadas ao backend.
 - Com apenas três anos e necessidade de combinações não contíguas (por exemplo, 2023 + 2025), seletores independentes de ano são mais adequados do que um slider contínuo.
+
+## Estado final
+
+O Web App foi concluído e publicado em 24/09/2026.
+
+**URL pública:**  
+https://script.google.com/macros/s/AKfycbwN7KphXDuU-Yhjjv_C9GdCNlhHKb1IeP50xz_Thw_Q6HAXT4woKL-AKjYW26Tm-cvhOQ/exec
+
+As decisões documentadas acima correspondem à arquitetura efetivamente implementada. Alterações posteriores devem ser tratadas como evolução do produto, não como pendência do MVP acadêmico.
