@@ -31,7 +31,7 @@ Ele:
 5. valida chaves, domínios binários e contagens;
 6. gera o painel escola-ano e artefatos de QA.
 
-O notebook `notebooks/01_ingestao_e_qa_censo.ipynb` reproduz o processo no Google Colab usando os arquivos preservados no Google Drive do projeto.
+O notebook `notebooks/01_ingestao_e_qa_censo.ipynb` reproduz o processo no Google Colab usando os arquivos preservados no Google Drive do projeto. O roteiro de execução humana e das evidências esperadas está em [`docs/EXECUCAO_COLAB.md`](docs/EXECUCAO_COLAB.md).
 
 ## QA do primeiro pipeline
 
