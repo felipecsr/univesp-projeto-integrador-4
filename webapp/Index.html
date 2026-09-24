@@ -19,15 +19,15 @@
     .nav-group{margin:10px 0 14px}.nav-label{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#888b82;font-weight:800;padding:5px 8px}
     .nav-btn{width:100%;border:0;background:transparent;text-align:left;padding:10px;border-radius:10px;color:#45515a;font-weight:700;font-size:13px;margin:1px 0}
     .nav-btn:hover{background:var(--surface-2)}.nav-btn.active{background:#eee2bc;color:#332b1e}
-    .sidebar-foot{border-top:1px solid var(--line);padding:12px 8px 4px;color:var(--muted);font-size:10px;line-height:1.45}
+    .sidebar-foot{border-top:1px solid var(--line);padding:12px 8px 4px;color:var(--muted);font-size:10px;line-height:1.45}.data-status{display:flex;align-items:center;gap:7px;margin-bottom:8px;font-weight:800;color:#5c655f}.status-dot{width:8px;height:8px;border-radius:50%;background:#7b8a72}.data-status.loading .status-dot{background:var(--gold);animation:pulse 1s infinite}.data-status.error .status-dot{background:var(--red)}@keyframes pulse{50%{opacity:.3}}
     .main{min-width:0}.screen{display:none}.screen.active{display:block}
     .module-head{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px}
     .eyebrow{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dark);font-weight:850}.module-title{font-size:25px;font-weight:790;letter-spacing:-.025em;margin-top:3px}.module-purpose{font-size:13px;color:var(--muted);margin-top:6px;max-width:880px}
-    .filter-panel{position:sticky;top:10px;z-index:20;background:rgba(255,253,248,.97);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 5px 18px rgba(37,45,48,.055);padding:12px 14px;margin-bottom:14px}
+    .filter-panel{position:sticky;top:10px;z-index:20;background:rgba(255,253,248,.97);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 5px 18px rgba(37,45,48,.055);padding:12px 14px;margin-bottom:14px;transition:.16s ease}.filter-panel.stuck{background:rgba(238,226,188,.97);border-color:#d0bd80;box-shadow:0 9px 28px rgba(90,72,35,.13)}body.loading-data .filter-panel{border-color:#cfad55}.filter-panel:before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:transparent;border-radius:var(--radius) var(--radius) 0 0}body.loading-data .filter-panel:before{background:linear-gradient(90deg,transparent,var(--gold),transparent);background-size:220% 100%;animation:shimmer 1.05s linear infinite}@keyframes shimmer{to{background-position:-220% 0}}
     .filters{display:flex;gap:11px;flex-wrap:wrap;align-items:end}.field{display:flex;flex-direction:column;gap:5px;min-width:145px}.field.grow{flex:1;min-width:240px}
     label{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em}
     select,input{width:100%;border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 10px;color:var(--ink)}
-    select:disabled{background:#eeeae1;color:#9a9b96}.filter-note{font-size:10px;color:var(--muted);margin-top:8px}
+    select:disabled{background:#eeeae1;color:#9a9b96}.filter-note{font-size:10px;color:var(--muted);margin-top:8px}.advanced{margin-left:auto;min-width:220px}.advanced summary{list-style:none;border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 10px;font-size:10px;font-weight:800;color:var(--muted);cursor:pointer}.advanced summary::-webkit-details-marker{display:none}.advanced-box{position:absolute;right:14px;top:58px;z-index:30;width:min(340px,calc(100vw - 40px));background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:12px}.advanced-copy{font-size:10px;color:var(--muted);line-height:1.45;margin-top:7px}.year-picker{display:flex;gap:6px;flex-wrap:wrap}.year-btn{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;padding:8px 11px;font-size:11px;font-weight:800}.year-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
     .grid{display:grid;gap:12px}.kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}.indicator-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
     .content-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}.span-12{grid-column:span 12}.span-8{grid-column:span 8}.span-7{grid-column:span 7}.span-6{grid-column:span 6}.span-5{grid-column:span 5}
     .card,.kpi-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
@@ -35,7 +35,7 @@
     .kpi-label{font-size:11px;font-weight:800;color:#687069}.kpi-value{font-size:25px;line-height:1.08;font-weight:800;letter-spacing:-.025em;margin-top:9px}.kpi-note{font-size:10px;color:var(--muted);margin-top:7px}
     .card-head{display:flex;align-items:flex-start;gap:10px}.card-copy{min-width:0;flex:1}.card-title{font-size:13px;font-weight:800}.card-sub{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
     .chart-wrap{height:310px;margin-top:10px;position:relative}.chart-wrap.tall{height:430px}.chart-wrap canvas{width:100%!important;height:100%!important}
-    .section-title{font-size:15px;font-weight:800;margin:22px 0 10px}.indicator-card{cursor:pointer;transition:.14s ease;min-height:118px}.indicator-card:hover{transform:translateY(-1px);border-color:#cbbd91}.indicator-card.selected{border-color:var(--gold);box-shadow:0 0 0 2px #f0e5c4}
+    .section-title{font-size:15px;font-weight:800;margin:22px 0 10px}.indicator-card{cursor:pointer;transition:.14s ease;min-height:118px;border-left:4px solid hsl(var(--cov-hue,210) 36% 52%);background:linear-gradient(135deg,hsla(var(--cov-hue,210),42%,93%,.72),var(--surface) 54%)}.indicator-card:hover{transform:translateY(-1px);border-color:#cbbd91}.indicator-card.selected{border-color:var(--gold);box-shadow:0 0 0 2px #f0e5c4}
     .indicator-label{font-size:11px;font-weight:800;line-height:1.3}.indicator-value{font-size:22px;font-weight:800;margin-top:8px}.muted{font-size:10px;color:var(--muted);line-height:1.4}.warning{font-size:10px;color:var(--gold-dark);font-weight:800;margin-top:5px}
     .loading-card{min-height:180px;display:grid;place-items:center;color:var(--muted);font-size:12px}.skeleton{height:12px;background:linear-gradient(90deg,#eee8dc,#f8f4eb,#eee8dc);background-size:220% 100%;animation:shine 1.3s infinite;border-radius:6px;margin:10px 0}@keyframes shine{to{background-position:-220% 0}}
     .error{background:#f8e9e6;border:1px solid #e2b7b0;color:#713d37;border-radius:12px;padding:10px 12px;font-size:12px;margin-bottom:12px}.notice{background:#fbf6e7;border:1px solid #d8cda9;color:#5f5234;border-radius:11px;padding:9px 11px;font-size:11px;margin-bottom:12px}
@@ -43,7 +43,7 @@
     .school-layout{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.5fr);gap:12px}.school-list{display:grid;gap:7px;max-height:640px;overflow:auto}.school-item{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:10px 11px;cursor:pointer}.school-item:hover{border-color:#cbbd91;background:#fff}.school-name{font-size:12px;font-weight:800}.school-meta{font-size:10px;color:var(--muted);margin-top:4px}
     .school-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.school-head h3{margin:0;font-size:17px}.school-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.mini-kpi{background:var(--surface-2);border-radius:10px;padding:9px}.mini-kpi span{display:block;font-size:9px;color:var(--muted);font-weight:700}.mini-kpi b{display:block;font-size:15px;margin-top:3px}
     .method-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.method-grid .card{min-height:120px}.method-grid h3{font-size:13px;margin:0 0 6px}
-    .status-pill{display:inline-block;padding:3px 7px;border-radius:99px;background:#eee2bc;color:#55451f;font-size:10px;font-weight:800}
+    .status-pill{display:inline-block;padding:3px 7px;border-radius:99px;background:#eee2bc;color:#55451f;font-size:10px;font-weight:800}.inline-control{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}.check-control{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface-2);border-radius:9px;padding:7px 9px;font-size:10px;font-weight:750;color:var(--muted)}.check-control input{width:auto;margin:0}.chart-footnote{font-size:9px;color:var(--muted);margin-top:6px}
     @media(max-width:1180px){.indicator-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.span-7,.span-5{grid-column:span 12}.school-layout{grid-template-columns:1fr}}
     @media(max-width:800px){.shell{display:block;padding:12px}.sidebar{position:relative;top:auto;display:flex;align-items:center;gap:6px;overflow:auto;max-height:none;margin-bottom:12px;padding:8px}.brand{min-width:210px;border-bottom:0;border-right:1px solid var(--line);margin:0;padding:5px 12px 5px 5px}.nav-group{display:flex;gap:5px;margin:0}.nav-label,.sidebar-foot{display:none}.nav-btn{white-space:nowrap;width:auto}.filter-panel{top:6px}.kpi-grid{grid-template-columns:1fr 1fr}.indicator-grid{grid-template-columns:1fr 1fr}.span-8,.span-6{grid-column:span 12}.module-title{font-size:21px}}
     @media(max-width:520px){.filters{display:grid;grid-template-columns:1fr 1fr}.field,.field.grow{min-width:0}.kpi-grid,.indicator-grid,.method-grid{grid-template-columns:1fr}.school-kpis{grid-template-columns:1fr 1fr}.chart-wrap{height:270px}.chart-wrap.tall{height:390px}}
@@ -64,7 +64,7 @@
       <div class="nav-label">Referência</div>
       <button class="nav-btn" data-screen="about">Sobre os dados</button>
     </div>
-    <div class="sidebar-foot">Visão principal em 2025. Tendências 2023–2025 quando semanticamente comparáveis.</div>
+    <div class="sidebar-foot"><div class="data-status" id="dataStatus"><span class="status-dot"></span><span id="dataStatusText">Preparando dados…</span></div>Visão principal em 2025. Tendências 2023–2025 quando semanticamente comparáveis.</div>
   </aside>
 
   <main class="main">
@@ -77,7 +77,7 @@
           <div class="field"><label>Ano</label><select id="ov-year"></select></div>
           <div class="field"><label>Rede</label><select id="ov-rede"></select></div>
           <div class="field"><label>Zona</label><select id="ov-zona"></select></div>
-          <div class="field"><label>Leitura</label><select id="ov-mode"><option value="schools">% de escolas</option><option value="enrollments">% ponderado por matrículas</option></select></div>
+          <details class="advanced"><summary>Opções de leitura</summary><div class="advanced-box"><div class="field"><label>Forma de cálculo</label><select id="ov-mode"><option value="schools">% de escolas</option><option value="enrollments">Ponderado por matrículas</option></select></div><div class="advanced-copy"><b>Padrão:</b> cada escola tem o mesmo peso. <b>Ponderado:</b> escolas maiores recebem mais peso pelo número de matrículas. Mantemos esta opção como análise complementar, não como leitura principal.</div></div></details>
         </div>
         <div id="ov-note" class="filter-note"></div>
       </div>
@@ -100,13 +100,14 @@
       <div class="module-head"><div class="eyebrow">Municípios comparáveis</div><div class="module-title">Comparações</div><div class="module-purpose">Compare Guaratinguetá com municípios paulistas de estrutura escolar semelhante sem usar a própria infraestrutura como critério de seleção.</div></div>
       <div class="filter-panel"><div class="filters">
         <div class="field grow"><label>Indicador</label><select id="cmp-indicator"></select></div>
-        <div class="field"><label>Ano</label><select id="cmp-year"></select></div>
-        <div class="field"><label>Leitura</label><select id="cmp-mode"><option value="schools">% de escolas</option><option value="enrollments">% ponderado por matrículas</option></select></div>
+        <div class="field"><label>Anos exibidos</label><div class="year-picker" id="cmp-years"><button class="year-btn active" data-year="2023">2023</button><button class="year-btn active" data-year="2024">2024</button><button class="year-btn active" data-year="2025">2025</button></div></div>
+        <details class="advanced"><summary>Opções de leitura</summary><div class="advanced-box"><div class="field"><label>Forma de cálculo</label><select id="cmp-mode"><option value="schools">% de escolas</option><option value="enrollments">Ponderado por matrículas</option></select></div><div class="advanced-copy">A leitura padrão compara a proporção de escolas com o item. A ponderação por matrículas é uma visão complementar.</div></div></details>
       </div></div>
       <div class="content-grid">
-        <div class="card span-7"><div class="card-title">Municípios no indicador selecionado</div><div class="card-sub">Guaratinguetá aparece destacada; a ordenação é apenas visual.</div><div class="chart-wrap tall"><canvas id="cmpChart"></canvas></div></div>
-        <div class="card span-5"><div class="card-title">Perfil geral</div><div class="card-sub">Guaratinguetá × média simples dos 10 municípios comparáveis.</div><div class="chart-wrap tall"><canvas id="cmpProfileChart"></canvas></div></div>
-        <div class="card span-12"><div class="card-title">Tabela de apoio</div><div class="card-sub">Valores e tamanho do universo observado no indicador selecionado.</div><div style="overflow:auto"><table class="comparison-table"><thead><tr><th>Município</th><th>Resultado</th><th>Escolas</th><th>Matrículas</th><th>Base válida</th></tr></thead><tbody id="cmp-table-body"></tbody></table></div></div>
+        <div class="card span-12"><div class="card-title">Municípios no indicador selecionado</div><div class="card-sub">Por padrão, 2023, 2024 e 2025 aparecem juntos. Guaratinguetá continua destacada em amarelo.</div><div class="chart-wrap tall"><canvas id="cmpChart"></canvas></div></div>
+        <div class="card span-6"><div class="card-title">Dispersão estrutural</div><div class="card-sub">Eixo X = indicador; eixo Y = matrículas; tamanho da bolha = número de escolas. Usa o ano mais recente da seleção.</div><div class="chart-wrap"><canvas id="cmpBubbleChart"></canvas></div></div>
+        <div class="card span-6"><div class="card-title">Perfil geral do período</div><div class="card-sub">Média de Guaratinguetá × média da base comparável nos anos selecionados.</div><div class="chart-wrap tall"><canvas id="cmpProfileChart"></canvas></div></div>
+        <div class="card span-12"><div class="card-title">Tabela de apoio</div><div class="card-sub">Resultados por município e ano no recorte selecionado.</div><div style="overflow:auto"><table class="comparison-table"><thead id="cmp-table-head"></thead><tbody id="cmp-table-body"></tbody></table></div></div>
       </div>
     </section>
 
