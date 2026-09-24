@@ -4,427 +4,240 @@
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    :root {
-      --bg: #f6f8fb;
-      --surface: #ffffff;
-      --text: #172033;
-      --muted: #687386;
-      --line: #dfe5ec;
-      --accent: #315b7d;
-      --accent-soft: #eaf1f7;
-      --warning: #8a5b16;
+    :root{
+      --bg:#f3efe5;--surface:#fffdf8;--surface-2:#f8f4ea;--ink:#26323c;--muted:#6e746f;
+      --gold:#c89a31;--gold-dark:#8a6720;--green:#67785e;--blue:#6c8290;--red:#9b5a52;
+      --line:#ded7c8;--shadow:0 7px 24px rgba(37,45,48,.065);--sidebar:228px;--radius:16px;
     }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
-    header { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
-    .topbar { max-width: 1200px; margin: 0 auto; padding: 16px 20px 10px; }
-    h1 { font-size: 20px; margin: 0 0 4px; }
-    .subtitle { color: var(--muted); font-size: 13px; }
-    nav { display: flex; gap: 8px; max-width: 1200px; margin: 0 auto; padding: 0 20px 12px; overflow-x: auto; }
-    nav button { border: 0; background: transparent; padding: 9px 12px; border-radius: 8px; cursor: pointer; color: var(--muted); white-space: nowrap; }
-    nav button.active { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
-    main { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .screen { display: none; }
-    .screen.active { display: block; }
-    .filters { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
-    .field { display: flex; flex-direction: column; gap: 5px; min-width: 150px; }
-    label { font-size: 12px; color: var(--muted); font-weight: 700; }
-    select, input { border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; background: var(--surface); color: var(--text); }
-    .grid { display: grid; gap: 12px; }
-    .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; }
-    .indicators { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 15px; }
-    .card h3 { margin: 0 0 8px; font-size: 14px; }
-    .metric { font-size: 26px; font-weight: 700; }
-    .muted { color: var(--muted); font-size: 12px; }
-    .indicator-card { cursor: pointer; }
-    .indicator-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
-    .bar { height: 8px; background: #edf1f5; border-radius: 99px; overflow: hidden; margin: 10px 0 5px; }
-    .bar > span { display: block; height: 100%; background: var(--accent); }
-    .warning { color: var(--warning); font-weight: 700; font-size: 12px; }
-    .section-title { margin: 24px 0 10px; font-size: 16px; }
-    .trend { display: flex; gap: 10px; align-items: end; min-height: 180px; padding-top: 15px; }
-    .trend-item { flex: 1; text-align: center; }
-    .trend-bar { width: 55%; margin: 0 auto 8px; min-height: 2px; background: var(--accent); border-radius: 6px 6px 0 0; }
-    .comparison-row { display: grid; grid-template-columns: minmax(130px, 1.4fr) 3fr 70px; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
-    .comparison-row.focus { font-weight: 700; }
-    .school-list { display: grid; gap: 8px; }
-    .school-item { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 11px; cursor: pointer; }
-    .school-item:hover { border-color: var(--accent); }
-    .school-header { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
-    .school-indicators { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .status-pill { display: inline-block; padding: 3px 7px; border-radius: 99px; background: var(--accent-soft); font-size: 11px; }
-    .method-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .loading { color: var(--muted); padding: 20px 0; }
-    .error { background: #fff2f0; border: 1px solid #f0c4bd; color: #8d2d21; padding: 10px; border-radius: 8px; margin-bottom: 12px; }
-    @media (max-width: 760px) {
-      main { padding: 14px; }
-      .kpis, .indicators, .method-grid, .school-indicators { grid-template-columns: 1fr; }
-      .comparison-row { grid-template-columns: 1fr; }
-      .filters { display: grid; grid-template-columns: 1fr 1fr; }
-      .field { min-width: 0; }
-    }
+    *{box-sizing:border-box}
+    html{background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{margin:0;background:linear-gradient(180deg,#efe8d8 0,#f6f2e9 210px,var(--bg) 100%);min-height:100vh}
+    button,input,select{font:inherit}button{cursor:pointer}
+    .shell{max-width:1700px;margin:0 auto;display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);gap:18px;padding:18px 22px 42px}
+    .sidebar{position:sticky;top:18px;align-self:start;background:rgba(255,253,248,.97);border:1px solid var(--line);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);max-height:calc(100vh - 36px);overflow:auto}
+    .brand{padding:8px 9px 15px;border-bottom:1px solid var(--line);margin-bottom:10px}.brand-title{font-size:17px;font-weight:800;line-height:1.15}.brand-sub{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.35}
+    .nav-group{margin:10px 0 14px}.nav-label{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#888b82;font-weight:800;padding:5px 8px}
+    .nav-btn{width:100%;border:0;background:transparent;text-align:left;padding:10px;border-radius:10px;color:#45515a;font-weight:700;font-size:13px;margin:1px 0}
+    .nav-btn:hover{background:var(--surface-2)}.nav-btn.active{background:#eee2bc;color:#332b1e}
+    .sidebar-foot{border-top:1px solid var(--line);padding:12px 8px 4px;color:var(--muted);font-size:10px;line-height:1.45}
+    .main{min-width:0}.screen{display:none}.screen.active{display:block}
+    .module-head{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px}
+    .eyebrow{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dark);font-weight:850}.module-title{font-size:25px;font-weight:790;letter-spacing:-.025em;margin-top:3px}.module-purpose{font-size:13px;color:var(--muted);margin-top:6px;max-width:880px}
+    .filter-panel{position:sticky;top:10px;z-index:20;background:rgba(255,253,248,.97);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 5px 18px rgba(37,45,48,.055);padding:12px 14px;margin-bottom:14px}
+    .filters{display:flex;gap:11px;flex-wrap:wrap;align-items:end}.field{display:flex;flex-direction:column;gap:5px;min-width:145px}.field.grow{flex:1;min-width:240px}
+    label{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+    select,input{width:100%;border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 10px;color:var(--ink)}
+    select:disabled{background:#eeeae1;color:#9a9b96}.filter-note{font-size:10px;color:var(--muted);margin-top:8px}
+    .grid{display:grid;gap:12px}.kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}.indicator-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .content-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px}.span-12{grid-column:span 12}.span-8{grid-column:span 8}.span-7{grid-column:span 7}.span-6{grid-column:span 6}.span-5{grid-column:span 5}
+    .card,.kpi-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
+    .kpi-card{position:relative;min-height:104px;overflow:hidden}.kpi-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blue)}
+    .kpi-label{font-size:11px;font-weight:800;color:#687069}.kpi-value{font-size:25px;line-height:1.08;font-weight:800;letter-spacing:-.025em;margin-top:9px}.kpi-note{font-size:10px;color:var(--muted);margin-top:7px}
+    .card-head{display:flex;align-items:flex-start;gap:10px}.card-copy{min-width:0;flex:1}.card-title{font-size:13px;font-weight:800}.card-sub{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+    .chart-wrap{height:310px;margin-top:10px;position:relative}.chart-wrap.tall{height:430px}.chart-wrap canvas{width:100%!important;height:100%!important}
+    .section-title{font-size:15px;font-weight:800;margin:22px 0 10px}.indicator-card{cursor:pointer;transition:.14s ease;min-height:118px}.indicator-card:hover{transform:translateY(-1px);border-color:#cbbd91}.indicator-card.selected{border-color:var(--gold);box-shadow:0 0 0 2px #f0e5c4}
+    .indicator-label{font-size:11px;font-weight:800;line-height:1.3}.indicator-value{font-size:22px;font-weight:800;margin-top:8px}.muted{font-size:10px;color:var(--muted);line-height:1.4}.warning{font-size:10px;color:var(--gold-dark);font-weight:800;margin-top:5px}
+    .loading-card{min-height:180px;display:grid;place-items:center;color:var(--muted);font-size:12px}.skeleton{height:12px;background:linear-gradient(90deg,#eee8dc,#f8f4eb,#eee8dc);background-size:220% 100%;animation:shine 1.3s infinite;border-radius:6px;margin:10px 0}@keyframes shine{to{background-position:-220% 0}}
+    .error{background:#f8e9e6;border:1px solid #e2b7b0;color:#713d37;border-radius:12px;padding:10px 12px;font-size:12px;margin-bottom:12px}.notice{background:#fbf6e7;border:1px solid #d8cda9;color:#5f5234;border-radius:11px;padding:9px 11px;font-size:11px;margin-bottom:12px}
+    .comparison-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px}.comparison-table th{text-align:left;color:var(--muted);padding:7px;border-bottom:1px solid var(--line)}.comparison-table td{padding:8px 7px;border-bottom:1px solid #eee8dc}.comparison-table tr.focus td{font-weight:800;background:#fbf6e7}
+    .school-layout{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.5fr);gap:12px}.school-list{display:grid;gap:7px;max-height:640px;overflow:auto}.school-item{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:10px 11px;cursor:pointer}.school-item:hover{border-color:#cbbd91;background:#fff}.school-name{font-size:12px;font-weight:800}.school-meta{font-size:10px;color:var(--muted);margin-top:4px}
+    .school-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.school-head h3{margin:0;font-size:17px}.school-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.mini-kpi{background:var(--surface-2);border-radius:10px;padding:9px}.mini-kpi span{display:block;font-size:9px;color:var(--muted);font-weight:700}.mini-kpi b{display:block;font-size:15px;margin-top:3px}
+    .method-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.method-grid .card{min-height:120px}.method-grid h3{font-size:13px;margin:0 0 6px}
+    .status-pill{display:inline-block;padding:3px 7px;border-radius:99px;background:#eee2bc;color:#55451f;font-size:10px;font-weight:800}
+    @media(max-width:1180px){.indicator-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.span-7,.span-5{grid-column:span 12}.school-layout{grid-template-columns:1fr}}
+    @media(max-width:800px){.shell{display:block;padding:12px}.sidebar{position:relative;top:auto;display:flex;align-items:center;gap:6px;overflow:auto;max-height:none;margin-bottom:12px;padding:8px}.brand{min-width:210px;border-bottom:0;border-right:1px solid var(--line);margin:0;padding:5px 12px 5px 5px}.nav-group{display:flex;gap:5px;margin:0}.nav-label,.sidebar-foot{display:none}.nav-btn{white-space:nowrap;width:auto}.filter-panel{top:6px}.kpi-grid{grid-template-columns:1fr 1fr}.indicator-grid{grid-template-columns:1fr 1fr}.span-8,.span-6{grid-column:span 12}.module-title{font-size:21px}}
+    @media(max-width:520px){.filters{display:grid;grid-template-columns:1fr 1fr}.field,.field.grow{min-width:0}.kpi-grid,.indicator-grid,.method-grid{grid-template-columns:1fr}.school-kpis{grid-template-columns:1fr 1fr}.chart-wrap{height:270px}.chart-wrap.tall{height:390px}}
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
-<header>
-  <div class="topbar">
-    <h1>Infraestrutura Escolar — Guaratinguetá</h1>
-    <div class="subtitle">Censo Escolar / INEP · Projeto Integrador 4 — UNIVESP</div>
-  </div>
-  <nav>
-    <button class="active" data-screen="overview">Visão Geral</button>
-    <button data-screen="comparisons">Comparações</button>
-    <button data-screen="schools">Escolas</button>
-    <button data-screen="about">Sobre os dados</button>
-  </nav>
-</header>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-title">Infraestrutura Escolar</div><div class="brand-sub">Guaratinguetá · Censo Escolar / INEP · PI4 UNIVESP</div></div>
+    <div class="nav-group">
+      <div class="nav-label">Análise</div>
+      <button class="nav-btn active" data-screen="overview">Visão Geral</button>
+      <button class="nav-btn" data-screen="comparisons">Comparações</button>
+      <button class="nav-btn" data-screen="schools">Escolas</button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Referência</div>
+      <button class="nav-btn" data-screen="about">Sobre os dados</button>
+    </div>
+    <div class="sidebar-foot">Visão principal em 2025. Tendências 2023–2025 quando semanticamente comparáveis.</div>
+  </aside>
 
-<main>
-  <div id="global-error"></div>
+  <main class="main">
+    <div id="global-error"></div>
 
-  <section id="overview" class="screen active">
-    <div class="filters">
-      <div class="field"><label>Ano</label><select id="ov-year"></select></div>
-      <div class="field"><label>Rede</label><select id="ov-rede"></select></div>
-      <div class="field"><label>Zona</label><select id="ov-zona"></select></div>
-      <div class="field">
-        <label>Leitura</label>
-        <select id="ov-mode">
-          <option value="schools">% de escolas</option>
-          <option value="enrollments">% ponderado por matrículas</option>
-        </select>
+    <section id="overview" class="screen active">
+      <div class="module-head"><div class="eyebrow">Visão municipal</div><div class="module-title">Guaratinguetá</div><div class="module-purpose">Explore a infraestrutura escolar, altere o recorte e acompanhe a evolução dos indicadores disponíveis.</div></div>
+      <div class="filter-panel">
+        <div class="filters">
+          <div class="field"><label>Ano</label><select id="ov-year"></select></div>
+          <div class="field"><label>Rede</label><select id="ov-rede"></select></div>
+          <div class="field"><label>Zona</label><select id="ov-zona"></select></div>
+          <div class="field"><label>Leitura</label><select id="ov-mode"><option value="schools">% de escolas</option><option value="enrollments">% ponderado por matrículas</option></select></div>
+        </div>
+        <div id="ov-note" class="filter-note"></div>
       </div>
-    </div>
-    <div id="ov-note" class="muted"></div>
-    <div id="ov-kpis" class="grid kpis"></div>
-    <div class="section-title">Indicadores de infraestrutura</div>
-    <div id="ov-indicators" class="grid indicators"></div>
-    <div class="section-title">Evolução do indicador selecionado</div>
-    <div id="ov-trend" class="card"></div>
-  </section>
-
-  <section id="comparisons" class="screen">
-    <div class="filters">
-      <div class="field"><label>Indicador</label><select id="cmp-indicator"></select></div>
-      <div class="field"><label>Ano</label><select id="cmp-year"></select></div>
-      <div class="field">
-        <label>Leitura</label>
-        <select id="cmp-mode">
-          <option value="schools">% de escolas</option>
-          <option value="enrollments">% ponderado por matrículas</option>
-        </select>
+      <div id="ov-kpis" class="grid kpi-grid"></div>
+      <div class="content-grid">
+        <div class="card span-7"><div class="card-head"><div class="card-copy"><div class="card-title">Perfil da infraestrutura</div><div class="card-sub">Todos os indicadores do recorte atual em uma única leitura.</div></div></div><div class="chart-wrap tall"><canvas id="ovProfileChart"></canvas></div></div>
+        <div class="card span-5"><div class="card-head"><div class="card-copy"><div class="card-title">Evolução 2023–2025</div><div class="card-sub" id="ovTrendSub">Indicador selecionado.</div></div></div><div class="chart-wrap"><canvas id="ovTrendChart"></canvas></div></div>
       </div>
-    </div>
-    <div class="card">
-      <div class="muted">Guaratinguetá e os 10 municípios estruturalmente comparáveis definidos no MVP.</div>
-      <div id="cmp-list"></div>
-    </div>
-  </section>
+      <div class="section-title">Indicadores de infraestrutura</div>
+      <div id="ov-indicators" class="grid indicator-grid"></div>
+      <div class="section-title">Recortes de 2025 para o indicador selecionado</div>
+      <div id="breakdown-note" class="notice">Rede e zona são recortes da fotografia de 2025. Bases com menos de 5 escolas são sinalizadas.</div>
+      <div class="content-grid">
+        <div class="card span-6"><div class="card-title">Por rede administrativa</div><div class="card-sub" id="networkChartSub"></div><div class="chart-wrap"><canvas id="networkChart"></canvas></div></div>
+        <div class="card span-6"><div class="card-title">Urbana × rural</div><div class="card-sub" id="zoneChartSub"></div><div class="chart-wrap"><canvas id="zoneChart"></canvas></div></div>
+      </div>
+    </section>
 
-  <section id="schools" class="screen">
-    <div class="filters">
-      <div class="field" style="min-width:260px"><label>Nome da escola</label><input id="school-query" placeholder="Digite parte do nome"></div>
-      <div class="field"><label>Rede</label><select id="school-rede"></select></div>
-      <div class="field"><label>Zona</label><select id="school-zona"></select></div>
-    </div>
-    <div id="school-results" class="school-list"></div>
-    <div id="school-detail"></div>
-  </section>
+    <section id="comparisons" class="screen">
+      <div class="module-head"><div class="eyebrow">Municípios comparáveis</div><div class="module-title">Comparações</div><div class="module-purpose">Compare Guaratinguetá com municípios paulistas de estrutura escolar semelhante sem usar a própria infraestrutura como critério de seleção.</div></div>
+      <div class="filter-panel"><div class="filters">
+        <div class="field grow"><label>Indicador</label><select id="cmp-indicator"></select></div>
+        <div class="field"><label>Ano</label><select id="cmp-year"></select></div>
+        <div class="field"><label>Leitura</label><select id="cmp-mode"><option value="schools">% de escolas</option><option value="enrollments">% ponderado por matrículas</option></select></div>
+      </div></div>
+      <div class="content-grid">
+        <div class="card span-7"><div class="card-title">Municípios no indicador selecionado</div><div class="card-sub">Guaratinguetá aparece destacada; a ordenação é apenas visual.</div><div class="chart-wrap tall"><canvas id="cmpChart"></canvas></div></div>
+        <div class="card span-5"><div class="card-title">Perfil geral</div><div class="card-sub">Guaratinguetá × média simples dos 10 municípios comparáveis.</div><div class="chart-wrap tall"><canvas id="cmpProfileChart"></canvas></div></div>
+        <div class="card span-12"><div class="card-title">Tabela de apoio</div><div class="card-sub">Valores e tamanho do universo observado no indicador selecionado.</div><div style="overflow:auto"><table class="comparison-table"><thead><tr><th>Município</th><th>Resultado</th><th>Escolas</th><th>Matrículas</th><th>Base válida</th></tr></thead><tbody id="cmp-table-body"></tbody></table></div></div>
+      </div>
+    </section>
 
-  <section id="about" class="screen">
-    <div id="about-content" class="grid method-grid"></div>
-  </section>
-</main>
+    <section id="schools" class="screen">
+      <div class="module-head"><div class="eyebrow">Consulta direta</div><div class="module-title">Escolas</div><div class="module-purpose">Localize uma escola de Guaratinguetá e veja sua infraestrutura de 2025 em contexto municipal.</div></div>
+      <div class="filter-panel"><div class="filters">
+        <div class="field grow"><label>Nome da escola</label><input id="school-query" placeholder="Digite parte do nome"></div>
+        <div class="field"><label>Rede</label><select id="school-rede"></select></div>
+        <div class="field"><label>Zona</label><select id="school-zona"></select></div>
+      </div><div class="filter-note">A lista de Guaratinguetá é carregada uma vez e os filtros seguintes são aplicados localmente para responder mais rápido.</div></div>
+      <div class="school-layout">
+        <div class="card"><div class="card-title">Resultados</div><div class="card-sub" id="school-count"></div><div id="school-results" class="school-list" style="margin-top:10px"></div></div>
+        <div id="school-detail"><div class="card loading-card">Selecione uma escola para abrir a ficha.</div></div>
+      </div>
+    </section>
+
+    <section id="about" class="screen">
+      <div class="module-head"><div class="eyebrow">Metodologia</div><div class="module-title">Sobre os dados</div><div class="module-purpose">Fonte, recortes e regras utilizadas para interpretar corretamente os resultados.</div></div>
+      <div id="about-content" class="grid method-grid"></div>
+    </section>
+  </main>
+</div>
 
 <script>
-  const state = {
-    bootstrap: null,
-    selectedIndicator: 'internet',
-    overview: null,
-  };
+  const APP_VERSION = '0.2.0';
+  const BOOT_KEY = 'pi4_boot_' + APP_VERSION;
+  const BOOT_TTL = 30 * 60 * 1000;
+  const state = {bootstrap:null,selectedIndicator:'internet',overview:null,breakdown:null,comparisons:null,profile:null,schools:[],charts:{},loaded:{overview:false,comparisons:false,schools:false,about:false}};
 
-  document.querySelectorAll('nav button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById(btn.dataset.screen).classList.add('active');
-    });
-  });
+  function el(id){return document.getElementById(id)}
+  function escapeHtml(value){return String(value ?? '').replace(/[&<>\"]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[s]))}
+  function fmtNumber(value){if(value===null||value===undefined||value==='')return '—';return new Intl.NumberFormat('pt-BR').format(Number(value))}
+  function fmtPct(value){if(value===null||value===undefined||isNaN(Number(value)))return '—';return new Intl.NumberFormat('pt-BR',{style:'percent',minimumFractionDigits:1,maximumFractionDigits:1}).format(Number(value))}
+  function pct100(value){return value===null||value===undefined||isNaN(Number(value))?null:Number(value)*100}
+  function shortLabel(v,n=28){v=String(v||'');return v.length>n?v.slice(0,n-1)+'…':v}
 
-  function runServer(fn, args) {
-    return new Promise((resolve, reject) => {
-      const runner = google.script.run
-        .withSuccessHandler(resolve)
-        .withFailureHandler(err => reject(new Error(err && err.message ? err.message : String(err))));
-      if (typeof args === 'undefined') runner[fn]();
-      else runner[fn](args);
-    });
+  function runServer(fn,args){return new Promise((resolve,reject)=>{const runner=google.script.run.withSuccessHandler(resolve).withFailureHandler(err=>reject(new Error(err&&err.message?err.message:String(err))));if(typeof args==='undefined')runner[fn]();else runner[fn](args)})}
+  function showError(error){el('global-error').innerHTML='<div class="error">'+escapeHtml(error.message||String(error))+'</div>'}
+  function clearError(){el('global-error').innerHTML=''}
+
+  function bootCacheGet(){try{const raw=localStorage.getItem(BOOT_KEY);if(!raw)return null;const x=JSON.parse(raw);return Date.now()-x.savedAt<BOOT_TTL?x.data:null}catch(_){return null}}
+  function bootCacheSet(data){try{localStorage.setItem(BOOT_KEY,JSON.stringify({savedAt:Date.now(),data}))}catch(_){}}
+
+  function fillSelect(id,values,allLabel){const x=el(id);x.innerHTML='';if(allLabel){const o=document.createElement('option');o.value='';o.textContent=allLabel;x.appendChild(o)}values.forEach(value=>{const o=document.createElement('option');o.value=value;o.textContent=value;x.appendChild(o)})}
+
+  function setupNavigation(){document.querySelectorAll('[data-screen]').forEach(btn=>btn.addEventListener('click',()=>switchScreen(btn.dataset.screen)))}
+  async function switchScreen(name){document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===name));try{if(name==='comparisons'&&!state.loaded.comparisons)await loadComparisons();if(name==='schools'&&!state.loaded.schools)await loadSchoolsOnce();if(name==='about'&&!state.loaded.about)loadAbout();setTimeout(()=>Object.values(state.charts).forEach(c=>{try{c.resize()}catch(_){}}),60)}catch(err){showError(err)}}
+
+  function setupFilters(){
+    const b=state.bootstrap;
+    fillSelect('ov-year',b.filters.years);el('ov-year').value=String(b.config.ANO_PADRAO||'2025');fillSelect('ov-rede',b.filters.redes,'Todas');fillSelect('ov-zona',b.filters.zonas,'Todas');
+    fillSelect('cmp-year',b.filters.years);el('cmp-year').value=String(b.config.ANO_PADRAO||'2025');
+    const pctCatalog=b.catalog.filter(x=>x.TIPO==='Percentual');el('cmp-indicator').innerHTML=pctCatalog.map(x=>'<option value="'+escapeHtml(x.ID)+'">'+escapeHtml(x.INDICADOR)+'</option>').join('');el('cmp-indicator').value=state.selectedIndicator;
+    fillSelect('school-rede',b.filters.redes,'Todas');fillSelect('school-zona',b.filters.zonas,'Todas');
+    ['ov-year','ov-rede','ov-zona'].forEach(id=>el(id).addEventListener('change',loadOverview));
+    el('ov-mode').addEventListener('change',()=>{if(!state.overview)return;state.overview.mode=el('ov-mode').value;renderOverview(state.overview);loadBreakdown()});
+    ['cmp-indicator','cmp-year','cmp-mode'].forEach(id=>el(id).addEventListener('change',loadComparisons));
+    ['school-query','school-rede','school-zona'].forEach(id=>el(id).addEventListener(id==='school-query'?'input':'change',renderSchoolList));
   }
 
-  function showError(error) {
-    document.getElementById('global-error').innerHTML =
-      '<div class="error">' + escapeHtml(error.message || String(error)) + '</div>';
+  function destroyChart(id){const c=state.charts[id];if(c){try{c.destroy()}catch(_){}delete state.charts[id]}}
+  function makeChart(id,config){destroyChart(id);const canvas=el(id);if(!canvas||!window.Chart)return;state.charts[id]=new Chart(canvas.getContext('2d'),config)}
+  function pctScale(){return{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:9}},grid:{color:'rgba(38,50,60,.08)'}}}
+  function baseLegend(){return{position:'bottom',labels:{boxWidth:11,usePointStyle:true,font:{size:10}}}}
+
+  async function init(){setupNavigation();try{state.bootstrap=bootCacheGet()||await runServer('getBootstrapData');bootCacheSet(state.bootstrap);setupFilters();await loadOverview();state.loaded.overview=true}catch(err){showError(err)}}
+
+  async function loadOverview(){
+    clearError();const year=el('ov-year').value,rede=el('ov-rede').value,zona=el('ov-zona').value,mode=el('ov-mode').value;
+    if(year!=='2025'&&(rede||zona)){el('ov-rede').value='';el('ov-zona').value=''}
+    el('ov-rede').disabled=year!=='2025';el('ov-zona').disabled=year!=='2025';
+    el('ov-note').textContent=year==='2025'?'Rede e zona podem ser combinadas na fotografia de 2025.':'Em 2023–2024 a visão do MVP é municipal agregada; rede e zona ficam desativadas.';
+    el('ov-kpis').innerHTML='<div class="kpi-card"><div class="skeleton"></div><div class="skeleton"></div></div>'.repeat(3);
+    try{const data=await runServer('getOverviewData',{year,rede:el('ov-rede').value,zona:el('ov-zona').value,mode});state.overview=data;renderOverview(data);await loadBreakdown()}catch(err){showError(err)}
   }
 
-  function clearError() {
-    document.getElementById('global-error').innerHTML = '';
+  function indicatorRows(data){const mode=data.mode;return state.bootstrap.catalog.filter(x=>x.TIPO==='Percentual').map(item=>{const m=data.snapshot.indicators[item.ID]||{};return{item,value:mode==='enrollments'?m.weighted:m.simple,valid:mode==='enrollments'?m.weightedValid:m.valid,baseSmall:m.baseSmall}})}
+  function renderOverview(data){
+    const s=data.snapshot;el('ov-kpis').innerHTML=[['Escolas ativas',fmtNumber(s.schools),'Universo do recorte'],['Matrículas',fmtNumber(s.enrollments),'QT_MAT_BAS informado'],['Salas utilizadas',fmtNumber(s.rooms),'Soma do recorte']].map(x=>'<div class="kpi-card"><div class="kpi-label">'+x[0]+'</div><div class="kpi-value">'+x[1]+'</div><div class="kpi-note">'+x[2]+'</div></div>').join('');
+    const rows=indicatorRows(data);
+    el('ov-indicators').innerHTML=rows.map(({item,value,valid,baseSmall})=>'<div class="card indicator-card '+(item.ID===state.selectedIndicator?'selected':'')+'" data-id="'+escapeHtml(item.ID)+'"><div class="indicator-label">'+escapeHtml(item.INDICADOR)+'</div><div class="indicator-value">'+fmtPct(value)+'</div><div class="muted">Base válida: '+fmtNumber(valid)+' escolas</div>'+(baseSmall?'<div class="warning">Base pequena</div>':'')+'</div>').join('');
+    document.querySelectorAll('.indicator-card').forEach(card=>card.addEventListener('click',()=>{state.selectedIndicator=card.dataset.id;el('cmp-indicator').value=state.selectedIndicator;renderOverview(state.overview);loadBreakdown();if(state.loaded.comparisons)loadComparisons()}));
+    renderOverviewProfile(rows);renderTrend(data.history,data.mode);
   }
 
-  function escapeHtml(value) {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  function renderOverviewProfile(rows){makeChart('ovProfileChart',{type:'bar',data:{labels:rows.map(x=>shortLabel(x.item.INDICADOR,34)),datasets:[{label:'Resultado',data:rows.map(x=>pct100(x.value)),backgroundColor:'rgba(108,130,144,.72)',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtPct(c.raw/100)}}},scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:9}}}}}})}
+  function renderTrend(history,mode){const item=state.bootstrap.catalog.find(x=>x.ID===state.selectedIndicator);el('ovTrendSub').textContent=(item?item.INDICADOR:state.selectedIndicator)+' · '+(mode==='enrollments'?'ponderado por matrículas':'percentual de escolas');const vals=history.map(x=>{const m=x.indicators[state.selectedIndicator]||{};return pct100(mode==='enrollments'?m.weighted:m.simple)});makeChart('ovTrendChart',{type:'line',data:{labels:history.map(x=>x.year),datasets:[{label:item?item.INDICADOR:'Indicador',data:vals,borderColor:'#c89a31',backgroundColor:'rgba(200,154,49,.15)',fill:true,tension:.2,pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtPct(c.raw/100)}}},scales:{y:pctScale(),x:{grid:{display:false}}}}})}
+
+  async function loadBreakdown(){
+    if(!state.bootstrap)return;const item=state.bootstrap.catalog.find(x=>x.ID===state.selectedIndicator);el('networkChartSub').textContent=item?item.INDICADOR:'';el('zoneChartSub').textContent=item?item.INDICADOR:'';
+    try{const d=await runServer('getBreakdownData',{indicatorId:state.selectedIndicator,mode:el('ov-mode').value});state.breakdown=d;renderBreakdown(d)}catch(err){showError(err)}
+  }
+  function renderBreakdown(d){
+    const common=rows=>({type:'bar',data:{labels:rows.map(x=>x.label+(x.baseSmall?' *':'')),datasets:[{data:rows.map(x=>pct100(x.value)),backgroundColor:rows.map(x=>x.baseSmall?'rgba(200,154,49,.72)':'rgba(103,120,94,.72)'),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const r=rows[c.dataIndex];return[fmtPct(r.value),'Base válida: '+fmtNumber(r.valid)+' escolas'+(r.baseSmall?' · base pequena':'')]}}}},scales:{y:pctScale(),x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+    makeChart('networkChart',common(d.networks));makeChart('zoneChart',common(d.zones));
   }
 
-  function fmtNumber(value) {
-    if (value === null || typeof value === 'undefined' || value === '') return '—';
-    return new Intl.NumberFormat('pt-BR').format(Number(value));
+  async function loadComparisons(){
+    clearError();const indicatorId=el('cmp-indicator').value||state.selectedIndicator,year=el('cmp-year').value,mode=el('cmp-mode').value;state.selectedIndicator=indicatorId;
+    try{const [data,profile]=await Promise.all([runServer('getComparisonData',{indicatorId,year,mode}),runServer('getComparableProfileData',{year,mode})]);state.comparisons=data;state.profile=profile;renderComparisons(data,profile);state.loaded.comparisons=true}catch(err){showError(err)}
+  }
+  function renderComparisons(data,profile){
+    const item=state.bootstrap.catalog.find(x=>x.ID===data.indicatorId);
+    makeChart('cmpChart',{type:'bar',data:{labels:data.rows.map(x=>x.municipality),datasets:[{label:item?item.INDICADOR:'Resultado',data:data.rows.map(x=>pct100(x.value)),backgroundColor:data.rows.map(x=>x.focus?'rgba(200,154,49,.82)':'rgba(108,130,144,.66)'),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtPct(c.raw/100)}}},scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:9}}}}}});
+    makeChart('cmpProfileChart',{type:'bar',data:{labels:profile.rows.map(x=>shortLabel(x.label,28)),datasets:[{label:'Guaratinguetá',data:profile.rows.map(x=>pct100(x.focus)),backgroundColor:'rgba(200,154,49,.78)',borderRadius:3},{label:'Média comparáveis',data:profile.rows.map(x=>pct100(x.comparableMean)),backgroundColor:'rgba(108,130,144,.62)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:baseLegend(),tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtPct(c.raw/100)}}},scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:8}}}}}});
+    el('cmp-table-body').innerHTML=data.rows.map(r=>'<tr class="'+(r.focus?'focus':'')+'"><td>'+escapeHtml(r.municipality)+(r.focus?' <span class="status-pill">Guaratinguetá</span>':'')+'</td><td>'+fmtPct(r.value)+'</td><td>'+fmtNumber(r.schools)+'</td><td>'+fmtNumber(r.enrollments)+'</td><td>'+fmtNumber(r.valid)+'</td></tr>').join('');
   }
 
-  function fmtPct(value) {
-    if (value === null || typeof value === 'undefined' || isNaN(Number(value))) return '—';
-    return new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Number(value));
+  async function loadSchoolsOnce(){
+    clearError();el('school-results').innerHTML='<div class="loading-card"><div>Carregando escolas…</div></div>';
+    try{state.schools=await runServer('searchSchools',{query:'',rede:'',zona:''});state.loaded.schools=true;renderSchoolList()}catch(err){showError(err)}
+  }
+  function renderSchoolList(){
+    const q=(el('school-query').value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(),rede=el('school-rede').value,zona=el('school-zona').value;
+    const rows=state.schools.filter(r=>{const name=String(r.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return(!q||name.includes(q))&&(!rede||r.rede===rede)&&(!zona||r.zona===zona)});
+    el('school-count').textContent=rows.length+' escola(s) no recorte.';
+    el('school-results').innerHTML=rows.map(r=>'<div class="school-item" data-code="'+escapeHtml(r.code)+'"><div class="school-name">'+escapeHtml(r.name)+'</div><div class="school-meta">'+escapeHtml(r.rede)+' · '+escapeHtml(r.zona)+' · '+fmtNumber(r.enrollments)+' matrículas</div></div>').join('')||'<div class="muted">Nenhuma escola encontrada.</div>';
+    document.querySelectorAll('.school-item').forEach(x=>x.addEventListener('click',()=>loadSchoolDetail(x.dataset.code)));
+  }
+  async function loadSchoolDetail(code){
+    el('school-detail').innerHTML='<div class="card loading-card">Carregando ficha…</div>';
+    try{const s=await runServer('getSchoolDetail',code);renderSchoolDetail(s)}catch(err){showError(err)}
+  }
+  function renderSchoolDetail(s){
+    el('school-detail').innerHTML='<div class="card"><div class="school-head"><div><h3>'+escapeHtml(s.name)+'</h3><div class="school-meta">'+escapeHtml(s.rede)+' · '+escapeHtml(s.zona)+'</div></div><span class="status-pill">2025</span></div><div class="school-kpis"><div class="mini-kpi"><span>Matrículas</span><b>'+fmtNumber(s.enrollments)+'</b></div><div class="mini-kpi"><span>Salas utilizadas</span><b>'+fmtNumber(s.rooms)+'</b></div></div><div class="section-title">Escola × Guaratinguetá</div><div class="chart-wrap tall"><canvas id="schoolChart"></canvas></div><div class="muted">Para a escola, 100% significa presença do item e 0% ausência. A referência municipal mostra a proporção de escolas com o item.</div></div>';
+    makeChart('schoolChart',{type:'bar',data:{labels:s.indicators.map(x=>shortLabel(x.label,30)),datasets:[{label:'Escola',data:s.indicators.map(x=>x.schoolValue===null?null:Number(x.schoolValue)*100),backgroundColor:'rgba(200,154,49,.78)',borderRadius:3},{label:'Guaratinguetá',data:s.indicators.map(x=>pct100(x.municipalityValue)),backgroundColor:'rgba(108,130,144,.62)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:baseLegend(),tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtPct(c.raw/100)}}},scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:8}}}}}});
   }
 
-  function fillSelect(id, values, allLabel) {
-    const el = document.getElementById(id);
-    el.innerHTML = '';
-    if (allLabel) {
-      const option = document.createElement('option');
-      option.value = '';
-      option.textContent = allLabel;
-      el.appendChild(option);
-    }
-    values.forEach(value => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = value;
-      el.appendChild(option);
-    });
-  }
-
-  async function init() {
-    try {
-      state.bootstrap = await runServer('getBootstrapData');
-      setupFilters();
-      await Promise.all([loadOverview(), loadComparisons(), loadSchools(), loadAbout()]);
-    } catch (err) {
-      showError(err);
-    }
-  }
-
-  function setupFilters() {
-    const b = state.bootstrap;
-    fillSelect('ov-year', b.filters.years);
-    document.getElementById('ov-year').value = String(b.config.ANO_PADRAO || '2025');
-    fillSelect('ov-rede', b.filters.redes, 'Todas');
-    fillSelect('ov-zona', b.filters.zonas, 'Todas');
-
-    fillSelect('cmp-year', b.filters.years);
-    document.getElementById('cmp-year').value = String(b.config.ANO_PADRAO || '2025');
-
-    const pctCatalog = b.catalog.filter(x => x.TIPO === 'Percentual');
-    const cmpIndicator = document.getElementById('cmp-indicator');
-    cmpIndicator.innerHTML = pctCatalog.map(x =>
-      '<option value="' + escapeHtml(x.ID) + '">' + escapeHtml(x.INDICADOR) + '</option>'
-    ).join('');
-    cmpIndicator.value = state.selectedIndicator;
-
-    fillSelect('school-rede', b.filters.redes, 'Todas');
-    fillSelect('school-zona', b.filters.zonas, 'Todas');
-
-    ['ov-year','ov-rede','ov-zona','ov-mode'].forEach(id =>
-      document.getElementById(id).addEventListener('change', loadOverview)
-    );
-    ['cmp-indicator','cmp-year','cmp-mode'].forEach(id =>
-      document.getElementById(id).addEventListener('change', loadComparisons)
-    );
-    ['school-query','school-rede','school-zona'].forEach(id =>
-      document.getElementById(id).addEventListener(id === 'school-query' ? 'input' : 'change', debounce(loadSchools, 250))
-    );
-  }
-
-  async function loadOverview() {
-    clearError();
-    const year = document.getElementById('ov-year').value;
-    const rede = document.getElementById('ov-rede').value;
-    const zona = document.getElementById('ov-zona').value;
-    const mode = document.getElementById('ov-mode').value;
-
-    if (year !== '2025' && (rede || zona)) {
-      document.getElementById('ov-rede').value = '';
-      document.getElementById('ov-zona').value = '';
-    }
-
-    document.getElementById('ov-note').textContent =
-      year === '2025'
-        ? 'Rede e zona podem ser combinadas na fotografia de 2025.'
-        : 'Em 2023–2024 a visão do MVP é municipal agregada; rede e zona ficam desativadas.';
-
-    document.getElementById('ov-rede').disabled = year !== '2025';
-    document.getElementById('ov-zona').disabled = year !== '2025';
-
-    try {
-      const data = await runServer('getOverviewData', {
-        year,
-        rede: document.getElementById('ov-rede').value,
-        zona: document.getElementById('ov-zona').value,
-        mode,
-      });
-      state.overview = data;
-      renderOverview(data);
-    } catch (err) {
-      showError(err);
-    }
-  }
-
-  function renderOverview(data) {
-    const s = data.snapshot;
-    document.getElementById('ov-kpis').innerHTML = [
-      ['Escolas ativas', fmtNumber(s.schools)],
-      ['Matrículas', fmtNumber(s.enrollments)],
-      ['Salas utilizadas', fmtNumber(s.rooms)],
-    ].map(([label,value]) =>
-      '<div class="card"><div class="muted">' + label + '</div><div class="metric">' + value + '</div></div>'
-    ).join('');
-
-    const pctCatalog = state.bootstrap.catalog.filter(x => x.TIPO === 'Percentual');
-    document.getElementById('ov-indicators').innerHTML = pctCatalog.map(item => {
-      const metric = s.indicators[item.ID] || {};
-      const value = data.mode === 'enrollments' ? metric.weighted : metric.simple;
-      const valid = data.mode === 'enrollments' ? metric.weightedValid : metric.valid;
-      const selected = item.ID === state.selectedIndicator ? ' selected' : '';
-      const warning = metric.baseSmall ? '<div class="warning">Base pequena</div>' : '';
-      return '<div class="card indicator-card' + selected + '" data-id="' + escapeHtml(item.ID) + '">' +
-        '<h3>' + escapeHtml(item.INDICADOR) + '</h3>' +
-        '<div class="metric">' + fmtPct(value) + '</div>' +
-        '<div class="bar"><span style="width:' + Math.max(0, Math.min(100, Number(value || 0) * 100)) + '%"></span></div>' +
-        '<div class="muted">Base válida: ' + fmtNumber(valid) + ' escolas</div>' +
-        warning + '</div>';
-    }).join('');
-
-    document.querySelectorAll('.indicator-card').forEach(card => {
-      card.addEventListener('click', () => {
-        state.selectedIndicator = card.dataset.id;
-        renderOverview(state.overview);
-        document.getElementById('cmp-indicator').value = state.selectedIndicator;
-        loadComparisons();
-      });
-    });
-
-    renderTrend(data.history, data.mode);
-  }
-
-  function renderTrend(history, mode) {
-    const catalogItem = state.bootstrap.catalog.find(x => x.ID === state.selectedIndicator);
-    const label = catalogItem ? catalogItem.INDICADOR : state.selectedIndicator;
-    const rows = history.map(item => {
-      const metric = item.indicators[state.selectedIndicator] || {};
-      return { year: item.year, value: mode === 'enrollments' ? metric.weighted : metric.simple };
-    });
-    const max = Math.max(...rows.map(r => Number(r.value || 0)), 1);
-    document.getElementById('ov-trend').innerHTML =
-      '<h3>' + escapeHtml(label) + '</h3><div class="trend">' +
-      rows.map(row => '<div class="trend-item">' +
-        '<div class="trend-bar" style="height:' + Math.max(2, Number(row.value || 0) / max * 135) + 'px"></div>' +
-        '<strong>' + fmtPct(row.value) + '</strong><div class="muted">' + escapeHtml(row.year) + '</div></div>'
-      ).join('') + '</div>';
-  }
-
-  async function loadComparisons() {
-    if (!state.bootstrap) return;
-    try {
-      const indicatorId = document.getElementById('cmp-indicator').value || state.selectedIndicator;
-      const data = await runServer('getComparisonData', {
-        indicatorId,
-        year: document.getElementById('cmp-year').value,
-        mode: document.getElementById('cmp-mode').value,
-      });
-      const catalogItem = state.bootstrap.catalog.find(x => x.ID === indicatorId);
-      const max = Math.max(...data.rows.map(r => Number(r.value || 0)), 1);
-      document.getElementById('cmp-list').innerHTML =
-        '<h3>' + escapeHtml(catalogItem ? catalogItem.INDICADOR : indicatorId) + '</h3>' +
-        data.rows.map(row =>
-          '<div class="comparison-row' + (row.focus ? ' focus' : '') + '">' +
-            '<div>' + escapeHtml(row.municipality) + (row.focus ? ' <span class="status-pill">Guaratinguetá</span>' : '') + '</div>' +
-            '<div class="bar"><span style="width:' + Math.max(0, Math.min(100, Number(row.value || 0) / max * 100)) + '%"></span></div>' +
-            '<div>' + fmtPct(row.value) + '</div>' +
-          '</div>'
-        ).join('');
-    } catch (err) {
-      showError(err);
-    }
-  }
-
-  async function loadSchools() {
-    if (!state.bootstrap) return;
-    try {
-      const rows = await runServer('searchSchools', {
-        query: document.getElementById('school-query').value,
-        rede: document.getElementById('school-rede').value,
-        zona: document.getElementById('school-zona').value,
-      });
-      document.getElementById('school-results').innerHTML = rows.slice(0, 30).map(row =>
-        '<div class="school-item" data-code="' + escapeHtml(row.code) + '">' +
-          '<div class="school-header"><div><strong>' + escapeHtml(row.name) + '</strong>' +
-          '<div class="muted">' + escapeHtml(row.rede) + ' · ' + escapeHtml(row.zona) + '</div></div>' +
-          '<div class="muted">' + fmtNumber(row.enrollments) + ' matrículas</div></div>' +
-        '</div>'
-      ).join('');
-      document.querySelectorAll('.school-item').forEach(item =>
-        item.addEventListener('click', () => loadSchoolDetail(item.dataset.code))
-      );
-    } catch (err) {
-      showError(err);
-    }
-  }
-
-  async function loadSchoolDetail(code) {
-    try {
-      const school = await runServer('getSchoolDetail', code);
-      document.getElementById('school-detail').innerHTML =
-        '<div class="section-title">Ficha da escola</div>' +
-        '<div class="card"><div class="school-header"><div><h3>' + escapeHtml(school.name) + '</h3>' +
-        '<div class="muted">' + escapeHtml(school.rede) + ' · ' + escapeHtml(school.zona) + '</div></div>' +
-        '<div><strong>' + fmtNumber(school.enrollments) + '</strong> matrículas<br><strong>' + fmtNumber(school.rooms) + '</strong> salas</div></div></div>' +
-        '<div class="section-title">Infraestrutura</div><div class="grid school-indicators">' +
-        school.indicators.map(item =>
-          '<div class="card"><h3>' + escapeHtml(item.label) + '</h3>' +
-          '<div class="metric">' + (item.schoolValue === 1 ? 'Sim' : item.schoolValue === 0 ? 'Não' : '—') + '</div>' +
-          '<div class="muted">Guaratinguetá: ' + fmtPct(item.municipalityValue) + '</div></div>'
-        ).join('') + '</div>';
-      document.getElementById('school-detail').scrollIntoView({ behavior: 'smooth' });
-    } catch (err) {
-      showError(err);
-    }
-  }
-
-  async function loadAbout() {
-    if (!state.bootstrap) return;
-    const config = state.bootstrap.config;
-    const blocks = [
-      ['Fonte', 'Censo Escolar / INEP.'],
-      ['Período', '2023, 2024 e 2025. A fotografia padrão é 2025.'],
-      ['Unidade', 'Escolas em funcionamento em cada edição do Censo Escolar.'],
-      ['Comparáveis', 'Top 10 do pool estrutural por número de escolas, matrículas e composição por rede/zona. Infraestrutura não entra no critério.'],
-      ['Percentuais', 'A visão principal dá o mesmo peso a cada escola. A visão ponderada usa QT_MAT_BAS como peso.'],
-      ['Base pequena', 'Resultados com menos de ' + escapeHtml(config.BASE_PEQUENA_LIMITE || 5) + ' escolas válidas devem ser interpretados com cautela.'],
-      ['Interpretação', 'A análise é descritiva e não estabelece causalidade.'],
-      ['Fora do MVP', 'Índice composto e machine learning.'],
-    ];
-    document.getElementById('about-content').innerHTML = blocks.map(([title,text]) =>
-      '<div class="card"><h3>' + title + '</h3><div class="muted">' + text + '</div></div>'
-    ).join('');
-  }
-
-  function debounce(fn, delay) {
-    let timer;
-    return function () {
-      clearTimeout(timer);
-      timer = setTimeout(fn, delay);
-    };
+  function loadAbout(){
+    const config=state.bootstrap.config,blocks=[['Fonte','Censo Escolar / INEP.'],['Período','2023, 2024 e 2025. A fotografia padrão é 2025.'],['Unidade','Escolas em funcionamento em cada edição do Censo Escolar.'],['Comparáveis','Top 10 do pool estrutural por número de escolas, matrículas e composição por rede/zona. Infraestrutura não entra no critério.'],['Percentuais','A visão principal dá o mesmo peso a cada escola. A visão ponderada usa QT_MAT_BAS como peso.'],['Base pequena','Resultados com menos de '+escapeHtml(config.BASE_PEQUENA_LIMITE||5)+' escolas válidas devem ser interpretados com cautela.'],['Interpretação','A análise é descritiva e não estabelece causalidade.'],['Fora do MVP','Índice composto e machine learning.']];
+    el('about-content').innerHTML=blocks.map(([title,text])=>'<div class="card"><h3>'+title+'</h3><div class="muted">'+text+'</div></div>').join('');state.loaded.about=true;
   }
 
   init();
