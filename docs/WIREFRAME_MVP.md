@@ -4,7 +4,7 @@
 
 Disponibilizar uma leitura simples da infraestrutura escolar de Guaratinguetá, com visão atual, tendência temporal, comparações com municípios estruturalmente semelhantes e consulta por escola.
 
-O MVP terá **quatro telas**. Rede, zona, série temporal e ponderação são controles dentro das telas; não viram páginas próprias.
+O MVP terá **quatro telas**. A navegação principal fica em uma **barra lateral à esquerda** no desktop e se adapta para navegação horizontal em telas pequenas. Rede, zona, série temporal e ponderação são controles dentro das telas; não viram páginas próprias.
 
 ## Navegação
 
@@ -42,8 +42,11 @@ Responder rapidamente: como está a infraestrutura escolar do município e como 
 - Salas utilizadas.
 
 ### Conteúdo principal
+- KPIs de escolas, matrículas e salas.
 - Cards dos 11 indicadores de infraestrutura.
+- Gráfico horizontal com o perfil completo dos 11 indicadores no recorte atual.
 - Gráfico de tendência 2023–2025 para o indicador selecionado.
+- Gráficos do indicador selecionado por rede administrativa e por zona em 2025.
 - Informação de denominador válido quando houver nulos.
 
 ### Interação
@@ -68,6 +71,7 @@ Guaratinguetá + 10 municípios comparáveis definidos pela análise estrutural 
 ### Conteúdo principal
 - Gráfico comparativo do indicador selecionado.
 - Destaque visual para Guaratinguetá.
+- Gráfico de perfil geral: Guaratinguetá versus média simples dos 10 comparáveis nos 11 indicadores.
 - Tabela curta com município, valor e denominador.
 - Contexto estrutural dos comparáveis: escolas e matrículas.
 
@@ -95,7 +99,7 @@ Permitir consulta direta de uma escola de Guaratinguetá.
 - Situação de cada um dos 11 indicadores de infraestrutura.
 
 ### Comparação contextual
-Para cada indicador binário, mostrar o percentual correspondente do município em 2025 como referência, sem transformar a escola em ranking.
+Para cada indicador binário, mostrar o percentual correspondente do município em 2025 como referência, sem transformar a escola em ranking. A ficha inclui um gráfico horizontal escola × Guaratinguetá para facilitar a leitura dos 11 itens.
 
 ### Regra
 A consulta por escola usa a fotografia de 2025, que é a base final por escola do MVP.
@@ -140,3 +144,11 @@ A consulta por escola usa a fotografia de 2025, que é a base final por escola d
 ## Critério de fechamento de A01
 
 A01 está concluída quando estas quatro telas, seus controles e suas regras de interação forem aceitos como arquitetura funcional do MVP. Ajustes visuais finos permanecem para A03/A04.
+
+## Desempenho de carregamento
+
+- A aplicação carrega primeiro apenas a Visão Geral.
+- Comparações, Escolas e Sobre os dados são carregadas sob demanda quando o usuário abre a seção.
+- A lista de escolas de Guaratinguetá é carregada uma única vez e filtrada no navegador.
+- O backend evita ler repetidamente a tabela completa de escolas de SP: localiza e lê somente o bloco do município-foco, com cache temporário.
+- A configuração inicial pode ser reaproveitada no navegador por curto período para reduzir roundtrips sem alterar a fonte oficial.
