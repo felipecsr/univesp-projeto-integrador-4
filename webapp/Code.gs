@@ -119,7 +119,7 @@ function getBreakdownData(params) {
         value: numericOrNull_(row[valueKey]),
         valid: numericOrNull_(row[validKey]),
         schools: numericOrNull_(row.N_ESCOLAS),
-        baseSmall: Boolean(row.BASE_PEQUENA),
+        baseSmall: numericOrNull_(row.N_ESCOLAS) !== null && numericOrNull_(row.N_ESCOLAS) < Number(config.BASE_PEQUENA_LIMITE || 5),
       };
     }),
   };
