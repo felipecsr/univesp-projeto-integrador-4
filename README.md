@@ -105,11 +105,22 @@ https://script.google.com/macros/s/AKfycbwN7KphXDuU-Yhjjv_C9GdCNlhHKb1IeP50xz_Th
 
 A arquitetura e as decisões de interface estão em [`docs/WIREFRAME_MVP.md`](docs/WIREFRAME_MVP.md).
 
-## Etapa final acadêmica
+## Fechamento do projeto
 
-O desenvolvimento técnico está concluído. O único material deliberadamente deixado aberto é a camada de **leitura humana do produto**: seleção de prints, interpretação crítica do dashboard e preparação da demonstração/vídeo.
+O projeto está concluído em sua camada técnica e analítica.
 
-Foi criado um roteiro específico para essa entrega em [`docs/ANALISE_FINAL_EQUIPE.md`](docs/ANALISE_FINAL_EQUIPE.md). Ele parte dos resultados técnicos já produzidos e não exige reexecutar notebooks apenas para gerar evidências.
+O repositório já reúne:
+
+- pipeline reproduzível e notebooks versionados;
+- QA consolidado;
+- resultados técnicos em tabelas reutilizáveis;
+- método de comparáveis;
+- regras de ponderação por matrículas;
+- base final de consumo;
+- Web App publicado;
+- documentação suficiente para sustentar relatório, análise crítica e apresentação.
+
+A leitura final do produto parte diretamente do Web App e dos resultados consolidados em [`docs/RESULTADOS_TECNICOS.md`](docs/RESULTADOS_TECNICOS.md). Não há dependência de novas execuções técnicas ou de evidências manuais para considerar o trabalho concluído.
 
 ## Papel deste repositório
 
