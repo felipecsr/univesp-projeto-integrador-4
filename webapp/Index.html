@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --surface: #ffffff;
+      --text: #172033;
+      --muted: #687386;
+      --line: #dfe5ec;
+      --accent: #315b7d;
+      --accent-soft: #eaf1f7;
+      --warning: #8a5b16;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
+    header { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
+    .topbar { max-width: 1200px; margin: 0 auto; padding: 16px 20px 10px; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .subtitle { color: var(--muted); font-size: 13px; }
+    nav { display: flex; gap: 8px; max-width: 1200px; margin: 0 auto; padding: 0 20px 12px; overflow-x: auto; }
+    nav button { border: 0; background: transparent; padding: 9px 12px; border-radius: 8px; cursor: pointer; color: var(--muted); white-space: nowrap; }
+    nav button.active { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    main { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .filters { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    .field { display: flex; flex-direction: column; gap: 5px; min-width: 150px; }
+    label { font-size: 12px; color: var(--muted); font-weight: 700; }
+    select, input { border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; background: var(--surface); color: var(--text); }
+    .grid { display: grid; gap: 12px; }
+    .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; }
+    .indicators { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 15px; }
+    .card h3 { margin: 0 0 8px; font-size: 14px; }
+    .metric { font-size: 26px; font-weight: 700; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .indicator-card { cursor: pointer; }
+    .indicator-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+    .bar { height: 8px; background: #edf1f5; border-radius: 99px; overflow: hidden; margin: 10px 0 5px; }
+    .bar > span { display: block; height: 100%; background: var(--accent); }
+    .warning { color: var(--warning); font-weight: 700; font-size: 12px; }
+    .section-title { margin: 24px 0 10px; font-size: 16px; }
+    .trend { display: flex; gap: 10px; align-items: end; min-height: 180px; padding-top: 15px; }
+    .trend-item { flex: 1; text-align: center; }
+    .trend-bar { width: 55%; margin: 0 auto 8px; min-height: 2px; background: var(--accent); border-radius: 6px 6px 0 0; }
+    .comparison-row { display: grid; grid-template-columns: minmax(130px, 1.4fr) 3fr 70px; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .comparison-row.focus { font-weight: 700; }
+    .school-list { display: grid; gap: 8px; }
+    .school-item { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 11px; cursor: pointer; }
+    .school-item:hover { border-color: var(--accent); }
+    .school-header { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+    .school-indicators { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .status-pill { display: inline-block; padding: 3px 7px; border-radius: 99px; background: var(--accent-soft); font-size: 11px; }
+    .method-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .loading { color: var(--muted); padding: 20px 0; }
+    .error { background: #fff2f0; border: 1px solid #f0c4bd; color: #8d2d21; padding: 10px; border-radius: 8px; margin-bottom: 12px; }
+    @media (max-width: 760px) {
+      main { padding: 14px; }
+      .kpis, .indicators, .method-grid, .school-indicators { grid-template-columns: 1fr; }
+      .comparison-row { grid-template-columns: 1fr; }
+      .filters { display: grid; grid-template-columns: 1fr 1fr; }
+      .field { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="topbar">
+    <h1>Infraestrutura Escolar — Guaratinguetá</h1>
+    <div class="subtitle">Censo Escolar / INEP · Projeto Integrador 4 — UNIVESP</div>
+  </div>
+  <nav>
+    <button class="active" data-screen="overview">Visão Geral</button>
+    <button data-screen="comparisons">Comparações</button>
+    <button data-screen="schools">Escolas</button>
+    <button data-screen="about">Sobre os dados</button>
+  </nav>
+</header>
+
+<main>
+  <div id="global-error"></div>
+
+  <section id="overview" class="screen active">
+    <div class="filters">
+      <div class="field"><label>Ano</label><select id="ov-year"></select></div>
+      <div class="field"><label>Rede</label><select id="ov-rede"></select></div>
+      <div class="field"><label>Zona</label><select id="ov-zona"></select></div>
+      <div class="field">
+        <label>Leitura</label>
+        <select id="ov-mode">
+          <option value="schools">% de escolas</option>
+          <option value="enrollments">% ponderado por matrículas</option>
+        </select>
+      </div>
+    </div>
+    <div id="ov-note" class="muted"></div>
+    <div id="ov-kpis" class="grid kpis"></div>
+    <div class="section-title">Indicadores de infraestrutura</div>
+    <div id="ov-indicators" class="grid indicators"></div>
+    <div class="section-title">Evolução do indicador selecionado</div>
+    <div id="ov-trend" class="card"></div>
+  </section>
+
+  <section id="comparisons" class="screen">
+    <div class="filters">
+      <div class="field"><label>Indicador</label><select id="cmp-indicator"></select></div>
+      <div class="field"><label>Ano</label><select id="cmp-year"></select></div>
+      <div class="field">
+        <label>Leitura</label>
+        <select id="cmp-mode">
+          <option value="schools">% de escolas</option>
+          <option value="enrollments">% ponderado por matrículas</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="muted">Guaratinguetá e os 10 municípios estruturalmente comparáveis definidos no MVP.</div>
+      <div id="cmp-list"></div>
+    </div>
+  </section>
+
+  <section id="schools" class="screen">
+    <div class="filters">
+      <div class="field" style="min-width:260px"><label>Nome da escola</label><input id="school-query" placeholder="Digite parte do nome"></div>
+      <div class="field"><label>Rede</label><select id="school-rede"></select></div>
+      <div class="field"><label>Zona</label><select id="school-zona"></select></div>
+    </div>
+    <div id="school-results" class="school-list"></div>
+    <div id="school-detail"></div>
+  </section>
+
+  <section id="about" class="screen">
+    <div id="about-content" class="grid method-grid"></div>
+  </section>
+</main>
+
+<script>
+  const state = {
+    bootstrap: null,
+    selectedIndicator: 'internet',
+    overview: null,
+  };
+
+  document.querySelectorAll('nav button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.screen).classList.add('active');
+    });
+  });
+
+  function runServer(fn, args) {
+    return new Promise((resolve, reject) => {
+      const runner = google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(err => reject(new Error(err && err.message ? err.message : String(err))));
+      if (typeof args === 'undefined') runner[fn]();
+      else runner[fn](args);
+    });
+  }
+
+  function showError(error) {
+    document.getElementById('global-error').innerHTML =
+      '<div class="error">' + escapeHtml(error.message || String(error)) + '</div>';
+  }
+
+  function clearError() {
+    document.getElementById('global-error').innerHTML = '';
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function fmtNumber(value) {
+    if (value === null || typeof value === 'undefined' || value === '') return '—';
+    return new Intl.NumberFormat('pt-BR').format(Number(value));
+  }
+
+  function fmtPct(value) {
+    if (value === null || typeof value === 'undefined' || isNaN(Number(value))) return '—';
+    return new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Number(value));
+  }
+
+  function fillSelect(id, values, allLabel) {
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    if (allLabel) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = allLabel;
+      el.appendChild(option);
+    }
+    values.forEach(value => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value;
+      el.appendChild(option);
+    });
+  }
+
+  async function init() {
+    try {
+      state.bootstrap = await runServer('getBootstrapData');
+      setupFilters();
+      await Promise.all([loadOverview(), loadComparisons(), loadSchools(), loadAbout()]);
+    } catch (err) {
+      showError(err);
+    }
+  }
+
+  function setupFilters() {
+    const b = state.bootstrap;
+    fillSelect('ov-year', b.filters.years);
+    document.getElementById('ov-year').value = String(b.config.ANO_PADRAO || '2025');
+    fillSelect('ov-rede', b.filters.redes, 'Todas');
+    fillSelect('ov-zona', b.filters.zonas, 'Todas');
+
+    fillSelect('cmp-year', b.filters.years);
+    document.getElementById('cmp-year').value = String(b.config.ANO_PADRAO || '2025');
+
+    const pctCatalog = b.catalog.filter(x => x.TIPO === 'Percentual');
+    const cmpIndicator = document.getElementById('cmp-indicator');
+    cmpIndicator.innerHTML = pctCatalog.map(x =>
+      '<option value="' + escapeHtml(x.ID) + '">' + escapeHtml(x.INDICADOR) + '</option>'
+    ).join('');
+    cmpIndicator.value = state.selectedIndicator;
+
+    fillSelect('school-rede', b.filters.redes, 'Todas');
+    fillSelect('school-zona', b.filters.zonas, 'Todas');
+
+    ['ov-year','ov-rede','ov-zona','ov-mode'].forEach(id =>
+      document.getElementById(id).addEventListener('change', loadOverview)
+    );
+    ['cmp-indicator','cmp-year','cmp-mode'].forEach(id =>
+      document.getElementById(id).addEventListener('change', loadComparisons)
+    );
+    ['school-query','school-rede','school-zona'].forEach(id =>
+      document.getElementById(id).addEventListener(id === 'school-query' ? 'input' : 'change', debounce(loadSchools, 250))
+    );
+  }
+
+  async function loadOverview() {
+    clearError();
+    const year = document.getElementById('ov-year').value;
+    const rede = document.getElementById('ov-rede').value;
+    const zona = document.getElementById('ov-zona').value;
+    const mode = document.getElementById('ov-mode').value;
+
+    if (year !== '2025' && (rede || zona)) {
+      document.getElementById('ov-rede').value = '';
+      document.getElementById('ov-zona').value = '';
+    }
+
+    document.getElementById('ov-note').textContent =
+      year === '2025'
+        ? 'Rede e zona podem ser combinadas na fotografia de 2025.'
+        : 'Em 2023–2024 a visão do MVP é municipal agregada; rede e zona ficam desativadas.';
+
+    document.getElementById('ov-rede').disabled = year !== '2025';
+    document.getElementById('ov-zona').disabled = year !== '2025';
+
+    try {
+      const data = await runServer('getOverviewData', {
+        year,
+        rede: document.getElementById('ov-rede').value,
+        zona: document.getElementById('ov-zona').value,
+        mode,
+      });
+      state.overview = data;
+      renderOverview(data);
+    } catch (err) {
+      showError(err);
+    }
+  }
+
+  function renderOverview(data) {
+    const s = data.snapshot;
+    document.getElementById('ov-kpis').innerHTML = [
+      ['Escolas ativas', fmtNumber(s.schools)],
+      ['Matrículas', fmtNumber(s.enrollments)],
+      ['Salas utilizadas', fmtNumber(s.rooms)],
+    ].map(([label,value]) =>
+      '<div class="card"><div class="muted">' + label + '</div><div class="metric">' + value + '</div></div>'
+    ).join('');
+
+    const pctCatalog = state.bootstrap.catalog.filter(x => x.TIPO === 'Percentual');
+    document.getElementById('ov-indicators').innerHTML = pctCatalog.map(item => {
+      const metric = s.indicators[item.ID] || {};
+      const value = data.mode === 'enrollments' ? metric.weighted : metric.simple;
+      const valid = data.mode === 'enrollments' ? metric.weightedValid : metric.valid;
+      const selected = item.ID === state.selectedIndicator ? ' selected' : '';
+      const warning = metric.baseSmall ? '<div class="warning">Base pequena</div>' : '';
+      return '<div class="card indicator-card' + selected + '" data-id="' + escapeHtml(item.ID) + '">' +
+        '<h3>' + escapeHtml(item.INDICADOR) + '</h3>' +
+        '<div class="metric">' + fmtPct(value) + '</div>' +
+        '<div class="bar"><span style="width:' + Math.max(0, Math.min(100, Number(value || 0) * 100)) + '%"></span></div>' +
+        '<div class="muted">Base válida: ' + fmtNumber(valid) + ' escolas</div>' +
+        warning + '</div>';
+    }).join('');
+
+    document.querySelectorAll('.indicator-card').forEach(card => {
+      card.addEventListener('click', () => {
+        state.selectedIndicator = card.dataset.id;
+        renderOverview(state.overview);
+        document.getElementById('cmp-indicator').value = state.selectedIndicator;
+        loadComparisons();
+      });
+    });
+
+    renderTrend(data.history, data.mode);
+  }
+
+  function renderTrend(history, mode) {
+    const catalogItem = state.bootstrap.catalog.find(x => x.ID === state.selectedIndicator);
+    const label = catalogItem ? catalogItem.INDICADOR : state.selectedIndicator;
+    const rows = history.map(item => {
+      const metric = item.indicators[state.selectedIndicator] || {};
+      return { year: item.year, value: mode === 'enrollments' ? metric.weighted : metric.simple };
+    });
+    const max = Math.max(...rows.map(r => Number(r.value || 0)), 1);
+    document.getElementById('ov-trend').innerHTML =
+      '<h3>' + escapeHtml(label) + '</h3><div class="trend">' +
+      rows.map(row => '<div class="trend-item">' +
+        '<div class="trend-bar" style="height:' + Math.max(2, Number(row.value || 0) / max * 135) + 'px"></div>' +
+        '<strong>' + fmtPct(row.value) + '</strong><div class="muted">' + escapeHtml(row.year) + '</div></div>'
+      ).join('') + '</div>';
+  }
+
+  async function loadComparisons() {
+    if (!state.bootstrap) return;
+    try {
+      const indicatorId = document.getElementById('cmp-indicator').value || state.selectedIndicator;
+      const data = await runServer('getComparisonData', {
+        indicatorId,
+        year: document.getElementById('cmp-year').value,
+        mode: document.getElementById('cmp-mode').value,
+      });
+      const catalogItem = state.bootstrap.catalog.find(x => x.ID === indicatorId);
+      const max = Math.max(...data.rows.map(r => Number(r.value || 0)), 1);
+      document.getElementById('cmp-list').innerHTML =
+        '<h3>' + escapeHtml(catalogItem ? catalogItem.INDICADOR : indicatorId) + '</h3>' +
+        data.rows.map(row =>
+          '<div class="comparison-row' + (row.focus ? ' focus' : '') + '">' +
+            '<div>' + escapeHtml(row.municipality) + (row.focus ? ' <span class="status-pill">Guaratinguetá</span>' : '') + '</div>' +
+            '<div class="bar"><span style="width:' + Math.max(0, Math.min(100, Number(row.value || 0) / max * 100)) + '%"></span></div>' +
+            '<div>' + fmtPct(row.value) + '</div>' +
+          '</div>'
+        ).join('');
+    } catch (err) {
+      showError(err);
+    }
+  }
+
+  async function loadSchools() {
+    if (!state.bootstrap) return;
+    try {
+      const rows = await runServer('searchSchools', {
+        query: document.getElementById('school-query').value,
+        rede: document.getElementById('school-rede').value,
+        zona: document.getElementById('school-zona').value,
+      });
+      document.getElementById('school-results').innerHTML = rows.slice(0, 30).map(row =>
+        '<div class="school-item" data-code="' + escapeHtml(row.code) + '">' +
+          '<div class="school-header"><div><strong>' + escapeHtml(row.name) + '</strong>' +
+          '<div class="muted">' + escapeHtml(row.rede) + ' · ' + escapeHtml(row.zona) + '</div></div>' +
+          '<div class="muted">' + fmtNumber(row.enrollments) + ' matrículas</div></div>' +
+        '</div>'
+      ).join('');
+      document.querySelectorAll('.school-item').forEach(item =>
+        item.addEventListener('click', () => loadSchoolDetail(item.dataset.code))
+      );
+    } catch (err) {
+      showError(err);
+    }
+  }
+
+  async function loadSchoolDetail(code) {
+    try {
+      const school = await runServer('getSchoolDetail', code);
+      document.getElementById('school-detail').innerHTML =
+        '<div class="section-title">Ficha da escola</div>' +
+        '<div class="card"><div class="school-header"><div><h3>' + escapeHtml(school.name) + '</h3>' +
+        '<div class="muted">' + escapeHtml(school.rede) + ' · ' + escapeHtml(school.zona) + '</div></div>' +
+        '<div><strong>' + fmtNumber(school.enrollments) + '</strong> matrículas<br><strong>' + fmtNumber(school.rooms) + '</strong> salas</div></div></div>' +
+        '<div class="section-title">Infraestrutura</div><div class="grid school-indicators">' +
+        school.indicators.map(item =>
+          '<div class="card"><h3>' + escapeHtml(item.label) + '</h3>' +
+          '<div class="metric">' + (item.schoolValue === 1 ? 'Sim' : item.schoolValue === 0 ? 'Não' : '—') + '</div>' +
+          '<div class="muted">Guaratinguetá: ' + fmtPct(item.municipalityValue) + '</div></div>'
+        ).join('') + '</div>';
+      document.getElementById('school-detail').scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+      showError(err);
+    }
+  }
+
+  async function loadAbout() {
+    if (!state.bootstrap) return;
+    const config = state.bootstrap.config;
+    const blocks = [
+      ['Fonte', 'Censo Escolar / INEP.'],
+      ['Período', '2023, 2024 e 2025. A fotografia padrão é 2025.'],
+      ['Unidade', 'Escolas em funcionamento em cada edição do Censo Escolar.'],
+      ['Comparáveis', 'Top 10 do pool estrutural por número de escolas, matrículas e composição por rede/zona. Infraestrutura não entra no critério.'],
+      ['Percentuais', 'A visão principal dá o mesmo peso a cada escola. A visão ponderada usa QT_MAT_BAS como peso.'],
+      ['Base pequena', 'Resultados com menos de ' + escapeHtml(config.BASE_PEQUENA_LIMITE || 5) + ' escolas válidas devem ser interpretados com cautela.'],
+      ['Interpretação', 'A análise é descritiva e não estabelece causalidade.'],
+      ['Fora do MVP', 'Índice composto e machine learning.'],
+    ];
+    document.getElementById('about-content').innerHTML = blocks.map(([title,text]) =>
+      '<div class="card"><h3>' + title + '</h3><div class="muted">' + text + '</div></div>'
+    ).join('');
+  }
+
+  function debounce(fn, delay) {
+    let timer;
+    return function () {
+      clearTimeout(timer);
+      timer = setTimeout(fn, delay);
+    };
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -99,9 +99,15 @@ A validação técnica de P04 e a EDA foram executadas sobre os arquivos oficiai
 
 `src/build_consumption.py` produz as tabelas finais por escola e agregadas usadas pelo Web App. O escopo inclui 2025 como fotografia principal, tendências 2023–2025, comparações por rede/zona, consulta por escola e grupo padrão de 10 municípios comparáveis.
 
+## Web App — MVP
+
+A arquitetura funcional do MVP está documentada em [`docs/WIREFRAME_MVP.md`](docs/WIREFRAME_MVP.md). O código inicial do Web App está em `webapp/`, com backend em Apps Script e frontend HTML/CSS/JavaScript apontando para a base final de consumo.
+
+O MVP foi organizado em quatro telas: Visão Geral, Comparações, Escolas e Sobre os dados.
+
 ## Próxima etapa
 
-Definir o wireframe do MVP e conectar o Web App à base final de consumo.
+Validar a execução do Web App no Apps Script e completar os testes das consultas e visualizações.
 
 ## Equipe
 
