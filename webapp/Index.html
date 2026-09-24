@@ -71,23 +71,18 @@
     <div id="global-error"></div>
 
     <section id="overview" class="screen active">
-      <div class="module-head"><div class="eyebrow">Visão municipal</div><div class="module-title">Guaratinguetá</div><div class="module-purpose">Explore a infraestrutura escolar, altere o recorte e acompanhe a evolução dos indicadores disponíveis.</div></div>
+      <div class="module-head"><div class="eyebrow">Visão municipal</div><div class="module-title">Guaratinguetá</div><div class="module-purpose">Selecione o ano para ver o perfil de Guaratinguetá. Clique em qualquer indicador do gráfico para acompanhar sua evolução e os recortes de 2025 por rede e zona.</div></div>
       <div class="filter-panel">
         <div class="filters">
           <div class="field"><label>Ano</label><select id="ov-year"></select></div>
-          <div class="field"><label>Rede</label><select id="ov-rede"></select></div>
-          <div class="field"><label>Zona</label><select id="ov-zona"></select></div>
-          <details class="advanced"><summary>Opções de leitura</summary><div class="advanced-box"><div class="field"><label>Forma de cálculo</label><select id="ov-mode"><option value="schools">% de escolas</option><option value="enrollments">Ponderado por matrículas</option></select></div><div class="advanced-copy"><b>Padrão:</b> cada escola tem o mesmo peso. <b>Ponderado:</b> escolas maiores recebem mais peso pelo número de matrículas. Mantemos esta opção como análise complementar, não como leitura principal.</div></div></details>
         </div>
         <div id="ov-note" class="filter-note"></div>
       </div>
       <div id="ov-kpis" class="grid kpi-grid"></div>
       <div class="content-grid">
-        <div class="card span-7"><div class="card-head"><div class="card-copy"><div class="card-title">Perfil da infraestrutura</div><div class="card-sub">Todos os indicadores do recorte atual em uma única leitura.</div></div></div><div class="chart-wrap tall"><canvas id="ovProfileChart"></canvas></div></div>
+        <div class="card span-7"><div class="card-head"><div class="card-copy"><div class="card-title">Perfil da infraestrutura</div><div class="card-sub">Todos os indicadores do ano selecionado. Clique em uma barra para detalhar o indicador.</div></div></div><div class="chart-wrap tall"><canvas id="ovProfileChart"></canvas></div></div>
         <div class="card span-5"><div class="card-head"><div class="card-copy"><div class="card-title">Evolução 2023–2025</div><div class="card-sub" id="ovTrendSub">Indicador selecionado.</div></div></div><div class="chart-wrap"><canvas id="ovTrendChart"></canvas></div></div>
       </div>
-      <div class="section-title">Indicadores de infraestrutura</div>
-      <div id="ov-indicators" class="grid indicator-grid"></div>
       <div class="section-title">Recortes de 2025 para o indicador selecionado</div>
       <div id="breakdown-note" class="notice">Rede e zona são recortes da fotografia de 2025. Bases com menos de 5 escolas são sinalizadas.</div>
       <div class="content-grid">
@@ -132,7 +127,7 @@
 </div>
 
 <script>
-  const APP_VERSION = '0.3.0';
+  const APP_VERSION = '0.4.0';
   const BOOT_KEY = 'pi4_boot_' + APP_VERSION;
   const BOOT_TTL = 30 * 60 * 1000;
   const state = {
@@ -227,8 +222,6 @@
     const b=state.bootstrap;
     fillSelect('ov-year',b.filters.years);
     el('ov-year').value=String(b.config.ANO_PADRAO||'2025');
-    fillSelect('ov-rede',b.filters.redes,'Todas');
-    fillSelect('ov-zona',b.filters.zonas,'Todas');
 
     const pctCatalog=b.catalog.filter(x=>x.TIPO==='Percentual');
     el('cmp-indicator').innerHTML=pctCatalog.map(x=>'<option value="'+escapeHtml(x.ID)+'">'+escapeHtml(x.INDICADOR)+'</option>').join('');
@@ -237,13 +230,7 @@
     fillSelect('school-rede',b.filters.redes,'Todas');
     fillSelect('school-zona',b.filters.zonas,'Todas');
 
-    ['ov-year','ov-rede','ov-zona'].forEach(id=>el(id).addEventListener('change',loadOverview));
-    el('ov-mode').addEventListener('change',()=>{
-      if(!state.overview)return;
-      state.overview.mode=el('ov-mode').value;
-      renderOverview(state.overview);
-      loadBreakdown();
-    });
+    el('ov-year').addEventListener('change',loadOverview);
 
     el('cmp-indicator').addEventListener('change',loadComparisons);
     el('cmp-mode').addEventListener('change',loadComparisons);
@@ -352,7 +339,6 @@
       syncYearButtons();
       if(state.bootstrap.initialOverview){
         state.overview=state.bootstrap.initialOverview;
-        el('ov-mode').value='schools';
         renderOverview(state.overview);
         await loadBreakdown();
       }else await loadOverview();
@@ -364,16 +350,12 @@
 
   async function loadOverview(){
     clearError();
-    const year=el('ov-year').value,rede=el('ov-rede').value,zona=el('ov-zona').value,mode=el('ov-mode').value;
-    if(year!=='2025'&&(rede||zona)){el('ov-rede').value='';el('ov-zona').value=''}
-    el('ov-rede').disabled=year!=='2025';
-    el('ov-zona').disabled=year!=='2025';
-    el('ov-note').textContent=year==='2025'
-      ?'Visão Geral mostra apenas Guaratinguetá. Rede e zona podem ser combinadas na fotografia de 2025; a evolução abaixo permanece municipal.'
-      :'Visão Geral mostra apenas Guaratinguetá. Em 2023–2024 a fotografia é municipal agregada; rede e zona ficam desativadas.';
+    const year=el('ov-year').value;
+    const mode='schools';
+    el('ov-note').textContent='Visão Geral mostra apenas Guaratinguetá. Clique em uma barra do perfil para ver a evolução 2023–2025 e atualizar os recortes de rede e zona abaixo.';
     el('ov-kpis').innerHTML='<div class="kpi-card"><div class="skeleton"></div><div class="skeleton"></div></div>'.repeat(3);
     try{
-      const data=await runServer('getOverviewData',{year,rede:el('ov-rede').value,zona:el('ov-zona').value,mode});
+      const data=await runServer('getOverviewData',{year,rede:'',zona:'',mode});
       state.overview=data;
       renderOverview(data);
       await loadBreakdown();
@@ -409,21 +391,6 @@
     ].map(x=>'<div class="kpi-card"><div class="kpi-label">'+x[0]+'</div><div class="kpi-value">'+x[1]+'</div><div class="kpi-note">'+x[2]+'</div></div>').join('');
 
     const rows=indicatorRows(data);
-    el('ov-indicators').innerHTML=rows.map(({item,value,valid,baseSmall})=>
-      '<div class="card indicator-card '+(item.ID===state.selectedIndicator?'selected':'')+'" style="--cov-hue:'+coverageHue(value)+'" data-id="'+escapeHtml(item.ID)+'">'+
-      '<div class="indicator-label">'+escapeHtml(item.INDICADOR)+'</div>'+
-      '<div class="indicator-value">'+fmtPct(value)+'</div>'+
-      '<div class="muted">Base válida: '+fmtNumber(valid)+' escolas</div>'+
-      (baseSmall?'<div class="warning">Base pequena</div>':'')+'</div>'
-    ).join('');
-
-    document.querySelectorAll('.indicator-card').forEach(card=>card.addEventListener('click',()=>{
-      state.selectedIndicator=card.dataset.id;
-      el('cmp-indicator').value=state.selectedIndicator;
-      renderOverview(state.overview);
-      loadBreakdown();
-      if(state.loaded.comparisons)loadComparisons();
-    }));
     renderOverviewProfile(rows);
     renderTrend(data.history,data.mode);
   }
@@ -436,12 +403,27 @@
         datasets:[{
           label:'Cobertura',
           data:rows.map(x=>pct100(x.value)),
-          backgroundColor:rows.map(x=>'hsla('+coverageHue(x.value)+',38%,52%,.74)'),
+          backgroundColor:rows.map(x=>x.item.ID===state.selectedIndicator
+            ?'rgba(200,154,49,.88)'
+            :'hsla('+coverageHue(x.value)+',38%,52%,.68)'),
+          borderColor:rows.map(x=>x.item.ID===state.selectedIndicator?'#8a6720':'rgba(80,100,113,.35)'),
+          borderWidth:rows.map(x=>x.item.ID===state.selectedIndicator?1.4:.4),
           borderRadius:5
         }]
       },
       options:{
         responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        onHover:(event,elements)=>{event.native.target.style.cursor=elements.length?'pointer':'default'},
+        onClick:(event,elements)=>{
+          if(!elements.length)return;
+          const selected=rows[elements[0].index];
+          if(!selected)return;
+          state.selectedIndicator=selected.item.ID;
+          if(el('cmp-indicator'))el('cmp-indicator').value=state.selectedIndicator;
+          renderOverview(state.overview);
+          loadBreakdown();
+          if(state.loaded.comparisons)loadComparisons();
+        },
         plugins:{
           legend:{display:false},
           tooltip:{callbacks:{label:c=>fmtPct100(c.raw)}},
@@ -473,7 +455,7 @@
     el('networkChartSub').textContent=item?item.INDICADOR:'';
     el('zoneChartSub').textContent=item?item.INDICADOR:'';
     try{
-      const d=await runServer('getBreakdownData',{indicatorId:state.selectedIndicator,mode:el('ov-mode').value});
+      const d=await runServer('getBreakdownData',{indicatorId:state.selectedIndicator,mode:'schools'});
       state.breakdown=d;
       renderBreakdown(d);
     }catch(err){showError(err)}
