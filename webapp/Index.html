@@ -172,7 +172,7 @@
   function pctScale(){return{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:9}},grid:{color:'rgba(38,50,60,.08)'}}}
   function baseLegend(){return{position:'bottom',labels:{boxWidth:11,usePointStyle:true,font:{size:10}}}}
 
-  async function init(){setupNavigation();try{state.bootstrap=bootCacheGet()||await runServer('getBootstrapData');bootCacheSet(state.bootstrap);setupFilters();await loadOverview();state.loaded.overview=true}catch(err){showError(err)}}
+  async function init(){setupNavigation();try{state.bootstrap=bootCacheGet()||await runServer('getBootstrapData');bootCacheSet(state.bootstrap);setupFilters();if(state.bootstrap.initialOverview){state.overview=state.bootstrap.initialOverview;el('ov-mode').value='schools';renderOverview(state.overview);await loadBreakdown()}else{await loadOverview()}state.loaded.overview=true}catch(err){showError(err)}}
 
   async function loadOverview(){
     clearError();const year=el('ov-year').value,rede=el('ov-rede').value,zona=el('ov-zona').value,mode=el('ov-mode').value;
@@ -206,7 +206,7 @@
 
   async function loadComparisons(){
     clearError();const indicatorId=el('cmp-indicator').value||state.selectedIndicator,year=el('cmp-year').value,mode=el('cmp-mode').value;state.selectedIndicator=indicatorId;
-    try{const [data,profile]=await Promise.all([runServer('getComparisonData',{indicatorId,year,mode}),runServer('getComparableProfileData',{year,mode})]);state.comparisons=data;state.profile=profile;renderComparisons(data,profile);state.loaded.comparisons=true}catch(err){showError(err)}
+    try{const bundle=await runServer('getComparisonBundle',{indicatorId,year,mode});state.comparisons=bundle.comparison;state.profile=bundle.profile;renderComparisons(bundle.comparison,bundle.profile);state.loaded.comparisons=true}catch(err){showError(err)}
   }
   function renderComparisons(data,profile){
     const item=state.bootstrap.catalog.find(x=>x.ID===data.indicatorId);
