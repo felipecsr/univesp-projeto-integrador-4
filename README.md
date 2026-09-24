@@ -81,9 +81,20 @@ Entram aqui, quando consolidados:
 
 A organização operacional do grupo, o Kanban e os arquivos vivos de trabalho permanecem no Google Drive compartilhado.
 
+## EDA preparada
+
+A próxima camada técnica já está preparada no repositório:
+
+- `notebooks/02_eda_guaratingueta.ipynb`: perfil descritivo de Guaratinguetá, infraestrutura, rede, zona e permanência das escolas;
+- `notebooks/03_comparaveis_sp.ipynb`: perfil dos 645 municípios paulistas e construção de um pool exploratório de comparáveis;
+- `src/eda.py`: funções reutilizáveis dessas análises;
+- [`docs/METODO_COMPARAVEIS.md`](docs/METODO_COMPARAVEIS.md): critérios e limites do método de comparabilidade.
+
+Esses notebooks só consolidam resultados oficiais depois que existir uma execução humana de P03 no Colab e o gate de P04 passar.
+
 ## Próxima etapa
 
-Construir e validar a base analítica que alimentará a EDA de Guaratinguetá e a seleção objetiva de municípios paulistas comparáveis.
+Executar a base analítica no Colab, reconciliá-la pelo gate P04 e então materializar as EDA de Guaratinguetá e dos municípios comparáveis.
 
 ## Equipe
 
