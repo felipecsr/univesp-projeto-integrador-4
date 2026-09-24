@@ -132,113 +132,571 @@
 </div>
 
 <script>
-  const APP_VERSION = '0.2.0';
+  const APP_VERSION = '0.3.0';
   const BOOT_KEY = 'pi4_boot_' + APP_VERSION;
   const BOOT_TTL = 30 * 60 * 1000;
-  const state = {bootstrap:null,selectedIndicator:'internet',overview:null,breakdown:null,comparisons:null,profile:null,schools:[],charts:{},loaded:{overview:false,comparisons:false,schools:false,about:false}};
+  const state = {
+    bootstrap:null,
+    selectedIndicator:'internet',
+    overview:null,
+    breakdown:null,
+    comparisons:null,
+    profile:null,
+    scatter:[],
+    schools:[],
+    schoolDetail:null,
+    charts:{},
+    selectedYears:new Set(['2023','2024','2025']),
+    pendingCalls:0,
+    callFailed:false,
+    loaded:{overview:false,comparisons:false,schools:false,about:false}
+  };
 
   function el(id){return document.getElementById(id)}
-  function escapeHtml(value){return String(value ?? '').replace(/[&<>\"]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[s]))}
+  function escapeHtml(value){return String(value ?? '').replace(/[&<>\"]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]))}
   function fmtNumber(value){if(value===null||value===undefined||value==='')return '—';return new Intl.NumberFormat('pt-BR').format(Number(value))}
   function fmtPct(value){if(value===null||value===undefined||isNaN(Number(value)))return '—';return new Intl.NumberFormat('pt-BR',{style:'percent',minimumFractionDigits:1,maximumFractionDigits:1}).format(Number(value))}
+  function fmtPct100(value){if(value===null||value===undefined||isNaN(Number(value)))return '—';return new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}).format(Number(value))+'%'}
   function pct100(value){return value===null||value===undefined||isNaN(Number(value))?null:Number(value)*100}
   function shortLabel(v,n=28){v=String(v||'');return v.length>n?v.slice(0,n-1)+'…':v}
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+  function mean(values){const v=(values||[]).filter(x=>x!==null&&x!==undefined&&!isNaN(Number(x))).map(Number);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
 
-  function runServer(fn,args){return new Promise((resolve,reject)=>{const runner=google.script.run.withSuccessHandler(resolve).withFailureHandler(err=>reject(new Error(err&&err.message?err.message:String(err))));if(typeof args==='undefined')runner[fn]();else runner[fn](args)})}
+  function setDataStatus(type,text){
+    const box=el('dataStatus'),txt=el('dataStatusText');
+    if(!box||!txt)return;
+    box.className='data-status '+(type||'');
+    txt.textContent=text||'Dados carregados';
+  }
+  function beginServer(){
+    if(state.pendingCalls===0)state.callFailed=false;
+    state.pendingCalls++;
+    document.body.classList.add('loading-data');
+    setDataStatus('loading','Atualizando dados…');
+  }
+  function endServer(ok){
+    if(!ok)state.callFailed=true;
+    state.pendingCalls=Math.max(0,state.pendingCalls-1);
+    if(state.pendingCalls===0){
+      document.body.classList.remove('loading-data');
+      setDataStatus(state.callFailed?'error':'',state.callFailed?'Erro na atualização':'Dados carregados');
+    }
+  }
+  function runServer(fn,args){
+    beginServer();
+    return new Promise((resolve,reject)=>{
+      const runner=google.script.run
+        .withSuccessHandler(data=>{endServer(true);resolve(data)})
+        .withFailureHandler(err=>{endServer(false);reject(new Error(err&&err.message?err.message:String(err)))});
+      if(typeof args==='undefined')runner[fn]();else runner[fn](args);
+    });
+  }
   function showError(error){el('global-error').innerHTML='<div class="error">'+escapeHtml(error.message||String(error))+'</div>'}
   function clearError(){el('global-error').innerHTML=''}
 
   function bootCacheGet(){try{const raw=localStorage.getItem(BOOT_KEY);if(!raw)return null;const x=JSON.parse(raw);return Date.now()-x.savedAt<BOOT_TTL?x.data:null}catch(_){return null}}
   function bootCacheSet(data){try{localStorage.setItem(BOOT_KEY,JSON.stringify({savedAt:Date.now(),data}))}catch(_){}}
 
-  function fillSelect(id,values,allLabel){const x=el(id);x.innerHTML='';if(allLabel){const o=document.createElement('option');o.value='';o.textContent=allLabel;x.appendChild(o)}values.forEach(value=>{const o=document.createElement('option');o.value=value;o.textContent=value;x.appendChild(o)})}
+  function fillSelect(id,values,allLabel){
+    const x=el(id);x.innerHTML='';
+    if(allLabel){const o=document.createElement('option');o.value='';o.textContent=allLabel;x.appendChild(o)}
+    values.forEach(value=>{const o=document.createElement('option');o.value=value;o.textContent=value;x.appendChild(o)});
+  }
 
-  function setupNavigation(){document.querySelectorAll('[data-screen]').forEach(btn=>btn.addEventListener('click',()=>switchScreen(btn.dataset.screen)))}
-  async function switchScreen(name){document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===name));try{if(name==='comparisons'&&!state.loaded.comparisons)await loadComparisons();if(name==='schools'&&!state.loaded.schools)await loadSchoolsOnce();if(name==='about'&&!state.loaded.about)loadAbout();setTimeout(()=>Object.values(state.charts).forEach(c=>{try{c.resize()}catch(_){}}),60)}catch(err){showError(err)}}
+  function setupNavigation(){
+    document.querySelectorAll('[data-screen]').forEach(btn=>btn.addEventListener('click',()=>switchScreen(btn.dataset.screen)));
+  }
+  async function switchScreen(name){
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));
+    document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===name));
+    try{
+      if(name==='comparisons'&&!state.loaded.comparisons)await loadComparisons();
+      if(name==='schools'&&!state.loaded.schools)await loadSchoolsOnce();
+      if(name==='about'&&!state.loaded.about)loadAbout();
+      setTimeout(()=>Object.values(state.charts).forEach(ch=>{try{ch.resize()}catch(_){}}),60);
+      updateStickyState();
+    }catch(err){showError(err)}
+  }
+
+  function selectedComparisonYears(){return ['2023','2024','2025'].filter(y=>state.selectedYears.has(y))}
+  function syncYearButtons(){
+    document.querySelectorAll('[data-year]').forEach(btn=>btn.classList.toggle('active',state.selectedYears.has(btn.dataset.year)));
+  }
 
   function setupFilters(){
     const b=state.bootstrap;
-    fillSelect('ov-year',b.filters.years);el('ov-year').value=String(b.config.ANO_PADRAO||'2025');fillSelect('ov-rede',b.filters.redes,'Todas');fillSelect('ov-zona',b.filters.zonas,'Todas');
-    fillSelect('cmp-year',b.filters.years);el('cmp-year').value=String(b.config.ANO_PADRAO||'2025');
-    const pctCatalog=b.catalog.filter(x=>x.TIPO==='Percentual');el('cmp-indicator').innerHTML=pctCatalog.map(x=>'<option value="'+escapeHtml(x.ID)+'">'+escapeHtml(x.INDICADOR)+'</option>').join('');el('cmp-indicator').value=state.selectedIndicator;
-    fillSelect('school-rede',b.filters.redes,'Todas');fillSelect('school-zona',b.filters.zonas,'Todas');
+    fillSelect('ov-year',b.filters.years);
+    el('ov-year').value=String(b.config.ANO_PADRAO||'2025');
+    fillSelect('ov-rede',b.filters.redes,'Todas');
+    fillSelect('ov-zona',b.filters.zonas,'Todas');
+
+    const pctCatalog=b.catalog.filter(x=>x.TIPO==='Percentual');
+    el('cmp-indicator').innerHTML=pctCatalog.map(x=>'<option value="'+escapeHtml(x.ID)+'">'+escapeHtml(x.INDICADOR)+'</option>').join('');
+    el('cmp-indicator').value=state.selectedIndicator;
+
+    fillSelect('school-rede',b.filters.redes,'Todas');
+    fillSelect('school-zona',b.filters.zonas,'Todas');
+
     ['ov-year','ov-rede','ov-zona'].forEach(id=>el(id).addEventListener('change',loadOverview));
-    el('ov-mode').addEventListener('change',()=>{if(!state.overview)return;state.overview.mode=el('ov-mode').value;renderOverview(state.overview);loadBreakdown()});
-    ['cmp-indicator','cmp-year','cmp-mode'].forEach(id=>el(id).addEventListener('change',loadComparisons));
+    el('ov-mode').addEventListener('change',()=>{
+      if(!state.overview)return;
+      state.overview.mode=el('ov-mode').value;
+      renderOverview(state.overview);
+      loadBreakdown();
+    });
+
+    el('cmp-indicator').addEventListener('change',loadComparisons);
+    el('cmp-mode').addEventListener('change',loadComparisons);
+    document.querySelectorAll('[data-year]').forEach(btn=>btn.addEventListener('click',()=>{
+      const year=btn.dataset.year;
+      if(state.selectedYears.has(year)){
+        if(state.selectedYears.size===1)return;
+        state.selectedYears.delete(year);
+      }else state.selectedYears.add(year);
+      syncYearButtons();
+      loadComparisons();
+    }));
+
     ['school-query','school-rede','school-zona'].forEach(id=>el(id).addEventListener(id==='school-query'?'input':'change',renderSchoolList));
   }
 
-  function destroyChart(id){const c=state.charts[id];if(c){try{c.destroy()}catch(_){}delete state.charts[id]}}
+  function updateStickyState(){
+    document.querySelectorAll('.screen.active .filter-panel').forEach(panel=>{
+      const r=panel.getBoundingClientRect();
+      panel.classList.toggle('stuck',r.top<=11&&window.scrollY>15);
+    });
+  }
+  window.addEventListener('scroll',updateStickyState,{passive:true});
+  window.addEventListener('resize',updateStickyState);
+
+  const valueLabelPlugin={
+    id:'valueLabels',
+    afterDatasetsDraw(chart,args,opts){
+      if(!opts||!opts.display)return;
+      const ctx=chart.ctx;
+      ctx.save();
+      ctx.font='700 9px Inter, system-ui, sans-serif';
+      ctx.fillStyle='#3f4a52';
+      chart.data.datasets.forEach((dataset,di)=>{
+        if(dataset.showValues===false)return;
+        const meta=chart.getDatasetMeta(di);
+        if(meta.hidden)return;
+        meta.data.forEach((element,i)=>{
+          const raw=dataset.data[i];
+          const numeric=typeof raw==='object'&&raw!==null?(raw.y??raw.x):raw;
+          if(numeric===null||numeric===undefined||isNaN(Number(numeric)))return;
+          const label=opts.formatter?opts.formatter(numeric,dataset,i):String(numeric);
+          if(meta.type==='bar'){
+            const horizontal=chart.options.indexAxis==='y';
+            if(horizontal){
+              const x=element.x;
+              const y=element.y;
+              const maxX=chart.chartArea.right;
+              const inside=x>maxX-42;
+              ctx.textAlign=inside?'right':'left';
+              ctx.textBaseline='middle';
+              ctx.fillStyle=inside?'#fff':'#4a545a';
+              ctx.fillText(label,inside?x-5:x+5,y);
+              ctx.fillStyle='#3f4a52';
+            }else{
+              ctx.textAlign='center';
+              ctx.textBaseline='bottom';
+              ctx.fillText(label,element.x,element.y-4);
+            }
+          }else if(meta.type==='line'){
+            ctx.textAlign='center';
+            ctx.textBaseline='bottom';
+            ctx.fillText(label,element.x,element.y-7);
+          }
+        });
+      });
+      ctx.restore();
+    }
+  };
+
+  const bubbleNamePlugin={
+    id:'bubbleNames',
+    afterDatasetsDraw(chart,args,opts){
+      if(!opts||!opts.display)return;
+      const ctx=chart.ctx;
+      ctx.save();
+      ctx.font='700 8px Inter, system-ui, sans-serif';
+      ctx.fillStyle='#535d61';
+      chart.data.datasets.forEach((dataset,di)=>{
+        const meta=chart.getDatasetMeta(di);
+        meta.data.forEach((element,i)=>{
+          const p=dataset.data[i];
+          if(!p||!p.label)return;
+          ctx.textAlign='left';
+          ctx.textBaseline='middle';
+          ctx.fillText(shortLabel(p.label,17),element.x+(p.r||5)+3,element.y);
+        });
+      });
+      ctx.restore();
+    }
+  };
+  if(window.Chart){Chart.register(valueLabelPlugin,bubbleNamePlugin)}
+
+  function destroyChart(id){const ch=state.charts[id];if(ch){try{ch.destroy()}catch(_){}delete state.charts[id]}}
   function makeChart(id,config){destroyChart(id);const canvas=el(id);if(!canvas||!window.Chart)return;state.charts[id]=new Chart(canvas.getContext('2d'),config)}
   function pctScale(){return{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:9}},grid:{color:'rgba(38,50,60,.08)'}}}
   function baseLegend(){return{position:'bottom',labels:{boxWidth:11,usePointStyle:true,font:{size:10}}}}
 
-  async function init(){setupNavigation();try{state.bootstrap=bootCacheGet()||await runServer('getBootstrapData');bootCacheSet(state.bootstrap);setupFilters();if(state.bootstrap.initialOverview){state.overview=state.bootstrap.initialOverview;el('ov-mode').value='schools';renderOverview(state.overview);await loadBreakdown()}else{await loadOverview()}state.loaded.overview=true}catch(err){showError(err)}}
+  async function init(){
+    setupNavigation();
+    setDataStatus('loading','Carregando dados…');
+    try{
+      state.bootstrap=bootCacheGet()||await runServer('getBootstrapData');
+      bootCacheSet(state.bootstrap);
+      setupFilters();
+      syncYearButtons();
+      if(state.bootstrap.initialOverview){
+        state.overview=state.bootstrap.initialOverview;
+        el('ov-mode').value='schools';
+        renderOverview(state.overview);
+        await loadBreakdown();
+      }else await loadOverview();
+      state.loaded.overview=true;
+      if(state.pendingCalls===0)setDataStatus('','Dados carregados');
+      updateStickyState();
+    }catch(err){showError(err);setDataStatus('error','Erro ao carregar')}
+  }
 
   async function loadOverview(){
-    clearError();const year=el('ov-year').value,rede=el('ov-rede').value,zona=el('ov-zona').value,mode=el('ov-mode').value;
+    clearError();
+    const year=el('ov-year').value,rede=el('ov-rede').value,zona=el('ov-zona').value,mode=el('ov-mode').value;
     if(year!=='2025'&&(rede||zona)){el('ov-rede').value='';el('ov-zona').value=''}
-    el('ov-rede').disabled=year!=='2025';el('ov-zona').disabled=year!=='2025';
-    el('ov-note').textContent=year==='2025'?'Rede e zona podem ser combinadas na fotografia de 2025.':'Em 2023–2024 a visão do MVP é municipal agregada; rede e zona ficam desativadas.';
+    el('ov-rede').disabled=year!=='2025';
+    el('ov-zona').disabled=year!=='2025';
+    el('ov-note').textContent=year==='2025'
+      ?'Visão Geral mostra apenas Guaratinguetá. Rede e zona podem ser combinadas na fotografia de 2025; a evolução abaixo permanece municipal.'
+      :'Visão Geral mostra apenas Guaratinguetá. Em 2023–2024 a fotografia é municipal agregada; rede e zona ficam desativadas.';
     el('ov-kpis').innerHTML='<div class="kpi-card"><div class="skeleton"></div><div class="skeleton"></div></div>'.repeat(3);
-    try{const data=await runServer('getOverviewData',{year,rede:el('ov-rede').value,zona:el('ov-zona').value,mode});state.overview=data;renderOverview(data);await loadBreakdown()}catch(err){showError(err)}
+    try{
+      const data=await runServer('getOverviewData',{year,rede:el('ov-rede').value,zona:el('ov-zona').value,mode});
+      state.overview=data;
+      renderOverview(data);
+      await loadBreakdown();
+    }catch(err){showError(err)}
   }
 
-  function indicatorRows(data){const mode=data.mode;return state.bootstrap.catalog.filter(x=>x.TIPO==='Percentual').map(item=>{const m=data.snapshot.indicators[item.ID]||{};return{item,value:mode==='enrollments'?m.weighted:m.simple,valid:mode==='enrollments'?m.weightedValid:m.valid,baseSmall:m.baseSmall}})}
+  function indicatorRows(data){
+    const mode=data.mode;
+    return state.bootstrap.catalog.filter(x=>x.TIPO==='Percentual').map(item=>{
+      const m=data.snapshot.indicators[item.ID]||{};
+      return{
+        item,
+        value:mode==='enrollments'?m.weighted:m.simple,
+        valid:mode==='enrollments'?m.weightedValid:m.valid,
+        baseSmall:m.baseSmall
+      };
+    }).sort((a,b)=>{
+      const av=a.value===null||a.value===undefined?-1:Number(a.value);
+      const bv=b.value===null||b.value===undefined?-1:Number(b.value);
+      return bv-av;
+    });
+  }
+  function coverageHue(value){
+    if(value===null||value===undefined||isNaN(Number(value)))return 205;
+    return Math.round(8+112*clamp(Number(value),0,1));
+  }
   function renderOverview(data){
-    const s=data.snapshot;el('ov-kpis').innerHTML=[['Escolas ativas',fmtNumber(s.schools),'Universo do recorte'],['Matrículas',fmtNumber(s.enrollments),'QT_MAT_BAS informado'],['Salas utilizadas',fmtNumber(s.rooms),'Soma do recorte']].map(x=>'<div class="kpi-card"><div class="kpi-label">'+x[0]+'</div><div class="kpi-value">'+x[1]+'</div><div class="kpi-note">'+x[2]+'</div></div>').join('');
+    const s=data.snapshot;
+    el('ov-kpis').innerHTML=[
+      ['Escolas ativas',fmtNumber(s.schools),'Universo do recorte'],
+      ['Matrículas',fmtNumber(s.enrollments),'QT_MAT_BAS informado'],
+      ['Salas utilizadas',fmtNumber(s.rooms),'Soma do recorte']
+    ].map(x=>'<div class="kpi-card"><div class="kpi-label">'+x[0]+'</div><div class="kpi-value">'+x[1]+'</div><div class="kpi-note">'+x[2]+'</div></div>').join('');
+
     const rows=indicatorRows(data);
-    el('ov-indicators').innerHTML=rows.map(({item,value,valid,baseSmall})=>'<div class="card indicator-card '+(item.ID===state.selectedIndicator?'selected':'')+'" data-id="'+escapeHtml(item.ID)+'"><div class="indicator-label">'+escapeHtml(item.INDICADOR)+'</div><div class="indicator-value">'+fmtPct(value)+'</div><div class="muted">Base válida: '+fmtNumber(valid)+' escolas</div>'+(baseSmall?'<div class="warning">Base pequena</div>':'')+'</div>').join('');
-    document.querySelectorAll('.indicator-card').forEach(card=>card.addEventListener('click',()=>{state.selectedIndicator=card.dataset.id;el('cmp-indicator').value=state.selectedIndicator;renderOverview(state.overview);loadBreakdown();if(state.loaded.comparisons)loadComparisons()}));
-    renderOverviewProfile(rows);renderTrend(data.history,data.mode);
+    el('ov-indicators').innerHTML=rows.map(({item,value,valid,baseSmall})=>
+      '<div class="card indicator-card '+(item.ID===state.selectedIndicator?'selected':'')+'" style="--cov-hue:'+coverageHue(value)+'" data-id="'+escapeHtml(item.ID)+'">'+
+      '<div class="indicator-label">'+escapeHtml(item.INDICADOR)+'</div>'+
+      '<div class="indicator-value">'+fmtPct(value)+'</div>'+
+      '<div class="muted">Base válida: '+fmtNumber(valid)+' escolas</div>'+
+      (baseSmall?'<div class="warning">Base pequena</div>':'')+'</div>'
+    ).join('');
+
+    document.querySelectorAll('.indicator-card').forEach(card=>card.addEventListener('click',()=>{
+      state.selectedIndicator=card.dataset.id;
+      el('cmp-indicator').value=state.selectedIndicator;
+      renderOverview(state.overview);
+      loadBreakdown();
+      if(state.loaded.comparisons)loadComparisons();
+    }));
+    renderOverviewProfile(rows);
+    renderTrend(data.history,data.mode);
   }
 
-  function renderOverviewProfile(rows){makeChart('ovProfileChart',{type:'bar',data:{labels:rows.map(x=>shortLabel(x.item.INDICADOR,34)),datasets:[{label:'Resultado',data:rows.map(x=>pct100(x.value)),backgroundColor:'rgba(108,130,144,.72)',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtPct(c.raw/100)}}},scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:9}}}}}})}
-  function renderTrend(history,mode){const item=state.bootstrap.catalog.find(x=>x.ID===state.selectedIndicator);el('ovTrendSub').textContent=(item?item.INDICADOR:state.selectedIndicator)+' · '+(mode==='enrollments'?'ponderado por matrículas':'percentual de escolas');const vals=history.map(x=>{const m=x.indicators[state.selectedIndicator]||{};return pct100(mode==='enrollments'?m.weighted:m.simple)});makeChart('ovTrendChart',{type:'line',data:{labels:history.map(x=>x.year),datasets:[{label:item?item.INDICADOR:'Indicador',data:vals,borderColor:'#c89a31',backgroundColor:'rgba(200,154,49,.15)',fill:true,tension:.2,pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtPct(c.raw/100)}}},scales:{y:pctScale(),x:{grid:{display:false}}}}})}
+  function renderOverviewProfile(rows){
+    makeChart('ovProfileChart',{
+      type:'bar',
+      data:{
+        labels:rows.map(x=>shortLabel(x.item.INDICADOR,34)),
+        datasets:[{
+          label:'Cobertura',
+          data:rows.map(x=>pct100(x.value)),
+          backgroundColor:rows.map(x=>'hsla('+coverageHue(x.value)+',38%,52%,.74)'),
+          borderRadius:5
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:c=>fmtPct100(c.raw)}},
+          valueLabels:{display:true,formatter:v=>fmtPct100(v)}
+        },
+        scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:9}}}}
+      }
+    });
+  }
+
+  function renderTrend(history,mode){
+    const item=state.bootstrap.catalog.find(x=>x.ID===state.selectedIndicator);
+    el('ovTrendSub').textContent=(item?item.INDICADOR:state.selectedIndicator)+' · '+(mode==='enrollments'?'ponderado por matrículas':'percentual de escolas');
+    const vals=history.map(x=>{const m=x.indicators[state.selectedIndicator]||{};return pct100(mode==='enrollments'?m.weighted:m.simple)});
+    makeChart('ovTrendChart',{
+      type:'line',
+      data:{labels:history.map(x=>x.year),datasets:[{label:item?item.INDICADOR:'Indicador',data:vals,borderColor:'#c89a31',backgroundColor:'rgba(200,154,49,.15)',fill:true,tension:.2,pointRadius:5}]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtPct100(c.raw)}},valueLabels:{display:true,formatter:v=>fmtPct100(v)}},
+        scales:{y:pctScale(),x:{grid:{display:false}}}
+      }
+    });
+  }
 
   async function loadBreakdown(){
-    if(!state.bootstrap)return;const item=state.bootstrap.catalog.find(x=>x.ID===state.selectedIndicator);el('networkChartSub').textContent=item?item.INDICADOR:'';el('zoneChartSub').textContent=item?item.INDICADOR:'';
-    try{const d=await runServer('getBreakdownData',{indicatorId:state.selectedIndicator,mode:el('ov-mode').value});state.breakdown=d;renderBreakdown(d)}catch(err){showError(err)}
+    if(!state.bootstrap)return;
+    const item=state.bootstrap.catalog.find(x=>x.ID===state.selectedIndicator);
+    el('networkChartSub').textContent=item?item.INDICADOR:'';
+    el('zoneChartSub').textContent=item?item.INDICADOR:'';
+    try{
+      const d=await runServer('getBreakdownData',{indicatorId:state.selectedIndicator,mode:el('ov-mode').value});
+      state.breakdown=d;
+      renderBreakdown(d);
+    }catch(err){showError(err)}
   }
   function renderBreakdown(d){
-    const common=rows=>({type:'bar',data:{labels:rows.map(x=>x.label+(x.baseSmall?' *':'')),datasets:[{data:rows.map(x=>pct100(x.value)),backgroundColor:rows.map(x=>x.baseSmall?'rgba(200,154,49,.72)':'rgba(103,120,94,.72)'),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const r=rows[c.dataIndex];return[fmtPct(r.value),'Base válida: '+fmtNumber(r.valid)+' escolas'+(r.baseSmall?' · base pequena':'')]}}}},scales:{y:pctScale(),x:{grid:{display:false},ticks:{font:{size:10}}}}}});
-    makeChart('networkChart',common(d.networks));makeChart('zoneChart',common(d.zones));
+    const common=rows=>({
+      type:'bar',
+      data:{
+        labels:rows.map(x=>x.label+(x.baseSmall?' *':'')),
+        datasets:[{
+          data:rows.map(x=>pct100(x.value)),
+          backgroundColor:rows.map(x=>x.baseSmall?'rgba(200,154,49,.72)':'rgba(103,120,94,.72)'),
+          borderRadius:5
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:c=>{const r=rows[c.dataIndex];return[fmtPct(r.value),'Base válida: '+fmtNumber(r.valid)+' escolas'+(r.baseSmall?' · base pequena':'')]}},
+          valueLabels:{display:true,formatter:v=>fmtPct100(v)}
+        },
+        scales:{y:pctScale(),x:{grid:{display:false},ticks:{font:{size:10}}}}
+      }
+    });
+    makeChart('networkChart',common(d.networks));
+    makeChart('zoneChart',common(d.zones));
   }
 
   async function loadComparisons(){
-    clearError();const indicatorId=el('cmp-indicator').value||state.selectedIndicator,year=el('cmp-year').value,mode=el('cmp-mode').value;state.selectedIndicator=indicatorId;
-    try{const bundle=await runServer('getComparisonBundle',{indicatorId,year,mode});state.comparisons=bundle.comparison;state.profile=bundle.profile;renderComparisons(bundle.comparison,bundle.profile);state.loaded.comparisons=true}catch(err){showError(err)}
+    clearError();
+    const indicatorId=el('cmp-indicator').value||state.selectedIndicator;
+    const years=selectedComparisonYears();
+    const mode=el('cmp-mode').value;
+    state.selectedIndicator=indicatorId;
+    try{
+      const bundle=await runServer('getComparisonBundle',{indicatorId,years,mode});
+      state.comparisons=bundle.comparison;
+      state.profile=bundle.profile;
+      state.scatter=bundle.scatter||[];
+      renderComparisons(bundle.comparison,bundle.profile,bundle.scatter||[]);
+      state.loaded.comparisons=true;
+    }catch(err){showError(err)}
   }
-  function renderComparisons(data,profile){
+
+  function yearColors(year,focus){
+    const map={
+      '2023':focus?'rgba(219,181,89,.58)':'rgba(108,130,144,.42)',
+      '2024':focus?'rgba(205,159,51,.72)':'rgba(108,130,144,.62)',
+      '2025':focus?'rgba(184,132,22,.90)':'rgba(108,130,144,.84)'
+    };
+    return map[year]||'rgba(108,130,144,.7)';
+  }
+
+  function renderComparisons(data,profile,scatter){
     const item=state.bootstrap.catalog.find(x=>x.ID===data.indicatorId);
-    makeChart('cmpChart',{type:'bar',data:{labels:data.rows.map(x=>x.municipality),datasets:[{label:item?item.INDICADOR:'Resultado',data:data.rows.map(x=>pct100(x.value)),backgroundColor:data.rows.map(x=>x.focus?'rgba(200,154,49,.82)':'rgba(108,130,144,.66)'),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtPct(c.raw/100)}}},scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:9}}}}}});
-    makeChart('cmpProfileChart',{type:'bar',data:{labels:profile.rows.map(x=>shortLabel(x.label,28)),datasets:[{label:'Guaratinguetá',data:profile.rows.map(x=>pct100(x.focus)),backgroundColor:'rgba(200,154,49,.78)',borderRadius:3},{label:'Média comparáveis',data:profile.rows.map(x=>pct100(x.comparableMean)),backgroundColor:'rgba(108,130,144,.62)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:baseLegend(),tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtPct(c.raw/100)}}},scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:8}}}}}});
-    el('cmp-table-body').innerHTML=data.rows.map(r=>'<tr class="'+(r.focus?'focus':'')+'"><td>'+escapeHtml(r.municipality)+(r.focus?' <span class="status-pill">Guaratinguetá</span>':'')+'</td><td>'+fmtPct(r.value)+'</td><td>'+fmtNumber(r.schools)+'</td><td>'+fmtNumber(r.enrollments)+'</td><td>'+fmtNumber(r.valid)+'</td></tr>').join('');
+    const labels=data.municipalities.map(x=>x.municipality);
+    const chartWrap=el('cmpChart').parentElement;
+    chartWrap.style.height=Math.max(430,labels.length*46)+'px';
+
+    const datasets=data.years.map(year=>({
+      label:year,
+      data:data.municipalities.map(m=>m.byYear[year]?pct100(m.byYear[year].value):null),
+      backgroundColor:data.municipalities.map(m=>yearColors(year,m.focus)),
+      borderColor:data.municipalities.map(m=>m.focus?'#8a6720':'rgba(80,100,113,.55)'),
+      borderWidth:data.municipalities.map(m=>m.focus?1.3:.4),
+      borderRadius:4
+    }));
+
+    makeChart('cmpChart',{
+      type:'bar',
+      data:{labels,datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        plugins:{
+          legend:baseLegend(),
+          tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtPct100(c.raw)}},
+          valueLabels:{display:true,formatter:v=>fmtPct100(v)}
+        },
+        scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:9}}}}
+      }
+    });
+
+    makeChart('cmpProfileChart',{
+      type:'bar',
+      data:{
+        labels:profile.rows.map(x=>shortLabel(x.label,28)),
+        datasets:[
+          {label:'Guaratinguetá',data:profile.rows.map(x=>pct100(x.focus)),backgroundColor:'rgba(200,154,49,.78)',borderRadius:3},
+          {label:'Média comparáveis',data:profile.rows.map(x=>pct100(x.comparableMean)),backgroundColor:'rgba(108,130,144,.62)',borderRadius:3}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        plugins:{
+          legend:baseLegend(),
+          tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtPct100(c.raw)}},
+          valueLabels:{display:true,formatter:v=>fmtPct100(v)}
+        },
+        scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:8}}}}
+      }
+    });
+
+    const bubbleData=scatter.map(p=>({
+      x:pct100(p.value),y:Number(p.enrollments),r:clamp(Math.sqrt(Number(p.schools))*1.45,6,18),
+      label:p.municipality,focus:p.focus,schools:p.schools,year:p.year
+    }));
+    makeChart('cmpBubbleChart',{
+      type:'bubble',
+      data:{datasets:[{
+        label:item?item.INDICADOR:'Indicador',
+        data:bubbleData,
+        backgroundColor:bubbleData.map(p=>p.focus?'rgba(200,154,49,.72)':'rgba(108,130,144,.48)'),
+        borderColor:bubbleData.map(p=>p.focus?'#8a6720':'#6c8290'),
+        borderWidth:bubbleData.map(p=>p.focus?2:1)
+      }]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          bubbleNames:{display:true},
+          tooltip:{callbacks:{label:c=>{const p=c.raw;return[p.label,fmtPct100(p.x),'Matrículas: '+fmtNumber(p.y),'Escolas: '+fmtNumber(p.schools),'Ano: '+p.year]}}}
+        },
+        scales:{
+          x:{min:0,max:100,title:{display:true,text:(item?item.INDICADOR:'Indicador')+' (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:9}},grid:{color:'rgba(38,50,60,.08)'}},
+          y:{title:{display:true,text:'Matrículas',font:{size:10}},ticks:{callback:v=>fmtNumber(v),font:{size:9}},grid:{color:'rgba(38,50,60,.08)'}}
+        }
+      }
+    });
+
+    el('cmp-table-head').innerHTML='<tr><th>Município</th>'+data.years.map(y=>'<th>'+y+'</th>').join('')+'<th>Escolas ('+data.latestYear+')</th><th>Matrículas ('+data.latestYear+')</th></tr>';
+    el('cmp-table-body').innerHTML=data.municipalities.map(m=>{
+      const latest=m.byYear[data.latestYear]||{};
+      return '<tr class="'+(m.focus?'focus':'')+'"><td>'+escapeHtml(m.municipality)+(m.focus?' <span class="status-pill">Guaratinguetá</span>':'')+'</td>'+
+        data.years.map(y=>'<td>'+fmtPct(m.byYear[y]?m.byYear[y].value:null)+'</td>').join('')+
+        '<td>'+fmtNumber(latest.schools)+'</td><td>'+fmtNumber(latest.enrollments)+'</td></tr>';
+    }).join('');
   }
 
   async function loadSchoolsOnce(){
-    clearError();el('school-results').innerHTML='<div class="loading-card"><div>Carregando escolas…</div></div>';
-    try{state.schools=await runServer('searchSchools',{query:'',rede:'',zona:''});state.loaded.schools=true;renderSchoolList()}catch(err){showError(err)}
+    clearError();
+    el('school-results').innerHTML='<div class="loading-card"><div>Carregando escolas…</div></div>';
+    try{
+      state.schools=await runServer('searchSchools',{query:'',rede:'',zona:''});
+      state.loaded.schools=true;
+      renderSchoolList();
+    }catch(err){showError(err)}
   }
   function renderSchoolList(){
-    const q=(el('school-query').value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(),rede=el('school-rede').value,zona=el('school-zona').value;
-    const rows=state.schools.filter(r=>{const name=String(r.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return(!q||name.includes(q))&&(!rede||r.rede===rede)&&(!zona||r.zona===zona)});
+    const q=(el('school-query').value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    const rede=el('school-rede').value,zona=el('school-zona').value;
+    const rows=state.schools.filter(r=>{
+      const name=String(r.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+      return(!q||name.includes(q))&&(!rede||r.rede===rede)&&(!zona||r.zona===zona);
+    });
     el('school-count').textContent=rows.length+' escola(s) no recorte.';
-    el('school-results').innerHTML=rows.map(r=>'<div class="school-item" data-code="'+escapeHtml(r.code)+'"><div class="school-name">'+escapeHtml(r.name)+'</div><div class="school-meta">'+escapeHtml(r.rede)+' · '+escapeHtml(r.zona)+' · '+fmtNumber(r.enrollments)+' matrículas</div></div>').join('')||'<div class="muted">Nenhuma escola encontrada.</div>';
+    el('school-results').innerHTML=rows.map(r=>
+      '<div class="school-item" data-code="'+escapeHtml(r.code)+'"><div class="school-name">'+escapeHtml(r.name)+'</div>'+
+      '<div class="school-meta">'+escapeHtml(r.rede)+' · '+escapeHtml(r.zona)+' · '+fmtNumber(r.enrollments)+' matrículas</div></div>'
+    ).join('')||'<div class="muted">Nenhuma escola encontrada.</div>';
     document.querySelectorAll('.school-item').forEach(x=>x.addEventListener('click',()=>loadSchoolDetail(x.dataset.code)));
   }
   async function loadSchoolDetail(code){
     el('school-detail').innerHTML='<div class="card loading-card">Carregando ficha…</div>';
-    try{const s=await runServer('getSchoolDetail',code);renderSchoolDetail(s)}catch(err){showError(err)}
+    try{
+      const s=await runServer('getSchoolDetail',code);
+      state.schoolDetail=s;
+      renderSchoolDetail(s);
+    }catch(err){showError(err)}
   }
   function renderSchoolDetail(s){
-    el('school-detail').innerHTML='<div class="card"><div class="school-head"><div><h3>'+escapeHtml(s.name)+'</h3><div class="school-meta">'+escapeHtml(s.rede)+' · '+escapeHtml(s.zona)+'</div></div><span class="status-pill">2025</span></div><div class="school-kpis"><div class="mini-kpi"><span>Matrículas</span><b>'+fmtNumber(s.enrollments)+'</b></div><div class="mini-kpi"><span>Salas utilizadas</span><b>'+fmtNumber(s.rooms)+'</b></div></div><div class="section-title">Escola × Guaratinguetá</div><div class="chart-wrap tall"><canvas id="schoolChart"></canvas></div><div class="muted">Para a escola, 100% significa presença do item e 0% ausência. A referência municipal mostra a proporção de escolas com o item.</div></div>';
-    makeChart('schoolChart',{type:'bar',data:{labels:s.indicators.map(x=>shortLabel(x.label,30)),datasets:[{label:'Escola',data:s.indicators.map(x=>x.schoolValue===null?null:Number(x.schoolValue)*100),backgroundColor:'rgba(200,154,49,.78)',borderRadius:3},{label:'Guaratinguetá',data:s.indicators.map(x=>pct100(x.municipalityValue)),backgroundColor:'rgba(108,130,144,.62)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:baseLegend(),tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtPct(c.raw/100)}}},scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:8}}}}}});
+    el('school-detail').innerHTML=
+      '<div class="card"><div class="school-head"><div><h3>'+escapeHtml(s.name)+'</h3><div class="school-meta">'+escapeHtml(s.rede)+' · '+escapeHtml(s.zona)+'</div></div><span class="status-pill">2025</span></div>'+
+      '<div class="school-kpis"><div class="mini-kpi"><span>Matrículas</span><b>'+fmtNumber(s.enrollments)+'</b></div><div class="mini-kpi"><span>Salas utilizadas</span><b>'+fmtNumber(s.rooms)+'</b></div></div>'+
+      '<div class="section-title">Escola × Guaratinguetá</div>'+
+      '<div class="inline-control"><label class="check-control"><input type="checkbox" id="schoolComparableToggle"> Exibir média dos 10 municípios comparáveis</label></div>'+
+      '<div class="chart-wrap tall"><canvas id="schoolChart"></canvas></div>'+
+      '<div class="muted">Para a escola, 100% significa presença do item e 0% ausência. Guaratinguetá e a base comparável são percentuais de escolas com o item.</div></div>';
+
+    makeChart('schoolChart',{
+      type:'bar',
+      data:{
+        labels:s.indicators.map(x=>shortLabel(x.label,30)),
+        datasets:[
+          {label:'Escola',data:s.indicators.map(x=>x.schoolValue===null?null:Number(x.schoolValue)*100),backgroundColor:'rgba(200,154,49,.78)',borderRadius:3},
+          {label:'Guaratinguetá',data:s.indicators.map(x=>pct100(x.municipalityValue)),backgroundColor:'rgba(108,130,144,.66)',borderRadius:3},
+          {label:'Média comparáveis',data:s.indicators.map(x=>pct100(x.comparableMean)),backgroundColor:'rgba(103,120,94,.58)',borderRadius:3,hidden:true}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        plugins:{
+          legend:baseLegend(),
+          tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtPct100(c.raw)}},
+          valueLabels:{display:true,formatter:v=>fmtPct100(v)}
+        },
+        scales:{x:pctScale(),y:{grid:{display:false},ticks:{font:{size:8}}}}
+      }
+    });
+
+    el('schoolComparableToggle').addEventListener('change',e=>{
+      const ch=state.charts.schoolChart;
+      if(!ch)return;
+      ch.setDatasetVisibility(2,e.target.checked);
+      ch.update();
+    });
   }
 
   function loadAbout(){
-    const config=state.bootstrap.config,blocks=[['Fonte','Censo Escolar / INEP.'],['Período','2023, 2024 e 2025. A fotografia padrão é 2025.'],['Unidade','Escolas em funcionamento em cada edição do Censo Escolar.'],['Comparáveis','Top 10 do pool estrutural por número de escolas, matrículas e composição por rede/zona. Infraestrutura não entra no critério.'],['Percentuais','A visão principal dá o mesmo peso a cada escola. A visão ponderada usa QT_MAT_BAS como peso.'],['Base pequena','Resultados com menos de '+escapeHtml(config.BASE_PEQUENA_LIMITE||5)+' escolas válidas devem ser interpretados com cautela.'],['Interpretação','A análise é descritiva e não estabelece causalidade.'],['Fora do MVP','Índice composto e machine learning.']];
-    el('about-content').innerHTML=blocks.map(([title,text])=>'<div class="card"><h3>'+title+'</h3><div class="muted">'+text+'</div></div>').join('');state.loaded.about=true;
+    const config=state.bootstrap.config;
+    const blocks=[
+      ['Fonte','Censo Escolar / INEP.'],
+      ['Período','2023, 2024 e 2025. Na Visão Geral, 2025 é a fotografia padrão e a evolução municipal usa os três anos.'],
+      ['Unidade','Escolas em funcionamento em cada edição do Censo Escolar.'],
+      ['Comparáveis','Top 10 do pool estrutural por número de escolas, matrículas e composição por rede/zona. Infraestrutura não entra no critério.'],
+      ['Percentual de escolas','Leitura padrão: cada escola tem o mesmo peso. É a forma mais direta de responder quantas escolas possuem determinado item.'],
+      ['Ponderação por matrículas','Opção complementar: escolas maiores recebem mais peso pelo número de matrículas. Ela ajuda a enxergar concentração dos estudantes, mas não substitui a leitura por escola.'],
+      ['Base pequena','Resultados com menos de '+escapeHtml(config.BASE_PEQUENA_LIMITE||5)+' escolas válidas devem ser interpretados com cautela.'],
+      ['Interpretação','A análise é descritiva e não estabelece causalidade.'],
+      ['Fora do MVP','Índice composto e machine learning.']
+    ];
+    el('about-content').innerHTML=blocks.map(([title,text])=>'<div class="card"><h3>'+title+'</h3><div class="muted">'+text+'</div></div>').join('');
+    state.loaded.about=true;
   }
 
   init();
