@@ -45,6 +45,12 @@ A base final também passou nos controles de domínio dos indicadores binários,
 
 Os percentuais acima usam como denominador as escolas com valor válido para cada indicador. Valores ausentes não são automaticamente convertidos para zero.
 
+### Visualização gerada a partir dos resultados consolidados
+
+![Evolução de indicadores selecionados em Guaratinguetá](assets/guaratingueta_evolucao.svg)
+
+O arquivo é gerado por `src/generate_report_assets.py`, permitindo recriar a figura sem depender de edição manual.
+
 ## 4. Grupo final de municípios comparáveis — 2025
 
 | Ordem estrutural | Município | Escolas | Matrículas |
