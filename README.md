@@ -6,6 +6,16 @@ Projeto acadêmico do curso de Ciência de Dados da UNIVESP voltado à análise 
 
 Transformar dados públicos de infraestrutura escolar em informações simples de consultar, comparar e discutir, com foco em Guaratinguetá e em municípios paulistas de estrutura escolar semelhante.
 
+## Conheça o Web App
+
+A interface pública permite explorar indicadores de infraestrutura escolar, acompanhar sua evolução, comparar Guaratinguetá com municípios semelhantes e consultar escolas individualmente.
+
+[**Acessar a aplicação interativa**](https://script.google.com/macros/s/AKfycbwN7KphXDuU-Yhjjv_C9GdCNlhHKb1IeP50xz_Thw_Q6HAXT4woKL-AKjYW26Tm-cvhOQ/exec) · [**Ver todas as capturas de tela**](docs/screenshots/README.md)
+
+[![Visão geral do Web App de infraestrutura escolar de Guaratinguetá](docs/screenshots/01_visao_geral_A.png)](docs/screenshots/README.md)
+
+*Prévia da tela Visão Geral. A galeria apresenta as quatro áreas da aplicação.*
+
 ## Recorte analítico
 
 A análise trabalha com os Censos Escolares de **2023, 2024 e 2025**.
