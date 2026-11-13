@@ -10,11 +10,15 @@ Transformar dados públicos de infraestrutura escolar em informações simples d
 
 A interface pública permite explorar indicadores de infraestrutura escolar, acompanhar sua evolução, comparar Guaratinguetá com municípios semelhantes e consultar escolas individualmente.
 
-[**Acessar a aplicação interativa**](https://script.google.com/macros/s/AKfycbwN7KphXDuU-Yhjjv_C9GdCNlhHKb1IeP50xz_Thw_Q6HAXT4woKL-AKjYW26Tm-cvhOQ/exec) · [**Ver todas as capturas de tela**](docs/screenshots/README.md)
+[**Acessar a aplicação interativa**](https://script.google.com/macros/s/AKfycbwN7KphXDuU-Yhjjv_C9GdCNlhHKb1IeP50xz_Thw_Q6HAXT4woKL-AKjYW26Tm-cvhOQ/exec) · [**Assistir ao vídeo de demonstração**](https://youtu.be/_CEHeCBFnpk) · [**Ver todas as capturas de tela**](docs/screenshots/README.md)
 
 [![Visão geral do Web App de infraestrutura escolar de Guaratinguetá](docs/screenshots/01_visao_geral_A.png)](docs/screenshots/README.md)
 
 *Prévia da tela Visão Geral. A galeria apresenta as quatro áreas da aplicação.*
+
+## Fonte dos dados
+
+Os dados vêm do [Censo Escolar](https://www.gov.br/inep/pt-br/areas-de-atuacao/pesquisas-estatisticas-e-indicadores/censo-escolar), publicado pelo INEP. O repositório não redistribui os arquivos oficiais: baixe as edições de 2023, 2024 e 2025 diretamente na fonte e informe os caminhos ao pipeline.
 
 ## Recorte analítico
 
@@ -43,6 +47,48 @@ Ele:
 Os notebooks em `notebooks/` registram as etapas de ingestão, EDA, comparáveis, rede/zona e ponderação por matrículas. **A execução manual no Colab não é requisito de conclusão do projeto**: a validação técnica já foi executada sobre os arquivos oficiais e os resultados consolidados estão documentados no repositório.
 
 Detalhes: [`docs/REPRODUTIBILIDADE.md`](docs/REPRODUTIBILIDADE.md).
+
+### Requisitos
+
+- Python 3.10 ou superior;
+- `pandas` e `numpy` (para o pipeline e a análise);
+- arquivos oficiais do Censo Escolar 2023–2025 (ZIPs/CSVs do INEP).
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install pandas numpy
+```
+
+### Execução
+
+```bash
+# 1. Painel escola-ano + artefatos de QA
+python -m src.censo_pipeline \
+  --zip-2023 caminho/censo_2023.zip \
+  --zip-2024 caminho/censo_2024.zip \
+  --escola-2025 caminho/censo_2025_escolas.csv \
+  --matricula-2025 caminho/censo_2025_matriculas.csv \
+  --output-dir output/
+
+# 2. Tabelas finais consumidas pelo Web App
+python -m src.build_consumption \
+  --panel output/censo_escolar_sp_escola_ano_2023_2025.csv.gz \
+  --output-dir output/consumo/
+```
+
+Em 2025 também é possível usar `--zip-2025` no lugar dos dois arquivos separados de escolas e matrículas. Os comandos são executados a partir da raiz do repositório.
+
+## Estrutura do repositório
+
+```text
+.
+├── src/           # pipeline, EDA, validação e geração da base de consumo
+├── notebooks/     # etapas analíticas em notebooks (01 a 05)
+├── webapp/        # Google Apps Script + HTML/CSS/JS do Web App
+├── docs/          # metodologia, resultados, reprodutibilidade e capturas
+└── README.md
+```
 
 ## QA técnico consolidado
 
@@ -101,7 +147,7 @@ Detalhes e diferenças observadas: [`docs/PONDERACAO_MATRICULAS.md`](docs/PONDER
 
 ## Web App
 
-A aplicação final foi construída com Google Apps Script + HTML/CSS/JavaScript e consome a base final em Google Sheets.
+A aplicação final foi construída com Google Apps Script + HTML/CSS/JavaScript e consome a base final em Google Sheets. O pipeline analítico é escrito em Python (pandas/numpy).
 
 As quatro áreas principais são:
 
@@ -112,6 +158,9 @@ As quatro áreas principais são:
 
 **Aplicação publicada:**  
 https://script.google.com/macros/s/AKfycbwN7KphXDuU-Yhjjv_C9GdCNlhHKb1IeP50xz_Thw_Q6HAXT4woKL-AKjYW26Tm-cvhOQ/exec
+
+**Vídeo de demonstração:**  
+https://youtu.be/_CEHeCBFnpk
 
 A arquitetura e as decisões de interface estão em [`docs/WIREFRAME_MVP.md`](docs/WIREFRAME_MVP.md).
 
@@ -146,6 +195,19 @@ Entram aqui:
 - material-base para relatório e apresentação.
 
 Arquivos oficiais de origem, bases de trabalho e organização operacional do grupo permanecem no Google Drive compartilhado.
+
+## Documentação
+
+| Documento | Conteúdo |
+| --- | --- |
+| [`docs/REPRODUTIBILIDADE.md`](docs/REPRODUTIBILIDADE.md) | Etapas, comandos e decisões de reprodução |
+| [`docs/RESULTADOS_TECNICOS.md`](docs/RESULTADOS_TECNICOS.md) | Tabelas com os resultados consolidados |
+| [`docs/ANALISE_FINAL_EQUIPE.md`](docs/ANALISE_FINAL_EQUIPE.md) | Análise crítica final dos dados |
+| [`docs/BASE_CONSUMO.md`](docs/BASE_CONSUMO.md) | Tabelas e regras da base de consumo |
+| [`docs/METODO_COMPARAVEIS.md`](docs/METODO_COMPARAVEIS.md) | Critérios de seleção dos municípios comparáveis |
+| [`docs/PONDERACAO_MATRICULAS.md`](docs/PONDERACAO_MATRICULAS.md) | Ponderação por matrículas e suas diferenças |
+| [`docs/WIREFRAME_MVP.md`](docs/WIREFRAME_MVP.md) | Arquitetura e decisões de interface do Web App |
+| [`docs/screenshots/README.md`](docs/screenshots/README.md) | Galeria de capturas das quatro áreas |
 
 ## Equipe
 
